@@ -41,6 +41,7 @@ int getMaxNumber(grille * plate) // Renvoie le plus grand nombre contenu dans le
 void printGame(grille * plate) // Affiche un tableau 2D
 {
     int max = getMaxNumber(plate);
+    printf("SCORE: %d\n", plate->score);
     for (int i = 0; i < plate->sizeTab; i++)
     {
         for (int j = 0; j < plate->sizeTab; j++)
@@ -112,7 +113,7 @@ int * getTabCourrante(grille * plate, int i, int j, int direction)
     return NULL;
 }
 
-void move(grille * plate, int direction)
+void mergeGrille(grille * plate, int direction)
 {
     int i = 0, j = 0, k = 0;
     int * curseur;
@@ -126,6 +127,7 @@ void move(grille * plate, int direction)
             if (*curseur && !(*curseur - *getTabCourrante(plate, i, j, direction)))
             {
                 *curseur *= 2;
+                plate->score += *curseur;
                 *getTabCourrante(plate, i, j, direction) = 0;
                 k++;
                 curseur = getTabCourrante(plate, i, k, direction);
@@ -164,10 +166,10 @@ void mooveGame(grille * plate)
         }
         printGame(plate);
         scanf("%c", &c);
-        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {move(plate, HAUT);}
-        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {move(plate, GAUCHE);}
-        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {move(plate, BAS);}
-        else if (c == 'd' || c == 'D') {move(plate, DROITE);}
+        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {mergeGrille(plate, HAUT);}
+        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {mergeGrille(plate, GAUCHE);}
+        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {mergeGrille(plate, BAS);}
+        else if (c == 'd' || c == 'D') {mergeGrille(plate, DROITE);}
         vider_buffer();            
     } while (!(gameIsFinish(plate)));
     printf("PERDU! \n");
@@ -180,6 +182,7 @@ grille * createGame(int size) // Créer un tableau vide avec une certaine dimens
         return NULL;
 
     plate->sizeTab = size;
+    plate->score = 0;
 
     plate->tab = (int **) malloc(plate->sizeTab * sizeof(int*));
     if (plate->tab == NULL)

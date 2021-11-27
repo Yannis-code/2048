@@ -6,6 +6,7 @@ enum{HAUT, BAS, GAUCHE, DROITE};
 typedef struct Ggrille
 {
     int ** tab;
+    int score;
     int sizeTab;
 } grille;
 
@@ -21,8 +22,6 @@ int getMaxNumber(grille * plate);
 // Affiche un tableau 2D
 void printGame(grille * plate);
 
-void printVerif(grille * plate);
-
 // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
 void placeRandomNumber(grille * plate);
 
@@ -33,9 +32,7 @@ int gameIsFinish(grille * plate);
 
 int * getTabCourrante(grille  * plate, int i, int j, int direction);
 
-void move(grille  * plate, int direction);
-
-void resetVerif(grille * plate);
+void mergeGrille(grille  * plate, int direction);
 
 void mooveGame(grille * plate);
 
