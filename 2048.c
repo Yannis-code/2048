@@ -2,15 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-enum{HAUT, BAS, GAUCHE, DROITE};
-
-typedef struct game
-{
-    int ** tab;
-    int ** verif;
-    int sizeTab;
-} game;
+#include "2048.h"
 
 void vider_buffer(void)	 			// vider le buffer pour éviter le bug des scanf
 {
@@ -31,7 +23,7 @@ int getSizeOfNumber(int number) // Renvoie le nombre de chiffres d'un nombre (ex
     return n+1;
 }
 
-int getMaxNumber(game* plate) // Renvoie le plus grand nombre contenu dans le tableau
+int getMaxNumber(grille * plate) // Renvoie le plus grand nombre contenu dans le tableau
 {
     int max = 0;
     for (int i = 0; i < plate->sizeTab; i++)
@@ -45,7 +37,7 @@ int getMaxNumber(game* plate) // Renvoie le plus grand nombre contenu dans le ta
     return max;
 }
 
-void printGame(game* plate) // Affiche un tableau 2D
+void printGame(grille * plate) // Affiche un tableau 2D
 {
     int max = getMaxNumber(plate);
     for (int i = 0; i < plate->sizeTab; i++)
@@ -57,18 +49,7 @@ void printGame(game* plate) // Affiche un tableau 2D
     printf("\n");
 }
 
-void printVerif(game* plate)
-{
-    for (int i = 0; i < plate->sizeTab; i++)
-    {
-        for (int j = 0; j < plate->sizeTab; j++)
-            printf("| %d ", plate->verif[i][j]);
-        printf("|\n");
-    }
-    printf("|\n");
-}
-
-void placeRandomNumber(game* plate) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
+void placeRandomNumber(grille * plate) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
 {
     int i, j, x;
     do {
@@ -83,7 +64,7 @@ void placeRandomNumber(game* plate) // Place un "2" à une position libre (="0")
         plate->tab[i][j] = 4;
 }
 
-int tryRandomNumber(game* plate)
+int tryRandomNumber(grille * plate)
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -96,7 +77,7 @@ int tryRandomNumber(game* plate)
     return 0;
 }
 
-int gameIsFinish(game* plate) // Détermine si la partie est terminé
+int gameIsFinish(grille * plate) // Détermine si la partie est terminé
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -117,7 +98,7 @@ int gameIsFinish(game* plate) // Détermine si la partie est terminé
     return 1;
 }
 
-int * getTabCourrante(game * plate, int i, int j, int direction)
+int * getTabCourrante(grille * plate, int i, int j, int direction)
 {
     if (direction == DROITE)
         return &plate->tab[i][plate->sizeTab-1-j];
@@ -130,7 +111,7 @@ int * getTabCourrante(game * plate, int i, int j, int direction)
     return NULL;
 }
 
-void move(game * plate, int direction)
+void move(grille * plate, int direction)
 {
     int i = 0, j = 0, k = 0;
     int * curseur;
@@ -167,16 +148,7 @@ void move(game * plate, int direction)
     }
 }
 
-void resetVerif(game* plate)
-{
-    for (int i = 0; i < plate->sizeTab; i++)
-    {
-        for (int j = 0; j < plate->sizeTab; j++)
-            plate->verif[i][j] = 0;
-    }
-}
-
-void mooveGame(game* plate)
+void mooveGame(grille * plate)
 {
     char c;
     int direction;
@@ -203,42 +175,31 @@ void mooveGame(game* plate)
     printf("PERDU! \n");
 }
 
-game* createGame(int size) // Créer un tableau vide avec une certaine dimension 
+grille * createGame(int size) // Créer un tableau vide avec une certaine dimension 
 {
-    game* plate =(game*) malloc(sizeof(game));
+    grille * plate =(grille *) malloc(sizeof(grille));
     plate->sizeTab = size;
     plate->tab = malloc(plate->sizeTab*sizeof(int*));
     for (int i = 0; i < size; i++)
         plate->tab[i] = malloc(plate->sizeTab*sizeof(int));
-
-    plate->verif = malloc(plate->sizeTab*sizeof(int*));
-    for (int i = 0; i < size; i++)
-        plate->verif[i] = malloc(plate->sizeTab*sizeof(int));
 
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; j++)
         {
             plate->tab[i][j] = 0;
-            plate->verif[i][j] = 0;
         }
     }
-    plate->tab[1][3] = 4;
-    plate->tab[1][2] = 4;
-    plate->tab[1][1] = 2;
-    plate->tab[1][0] = 2;
     return plate;
 }
 
-void freeGame(game* plate) // Libère la mémoire prélevé par le tableau
+void freeGame(grille * plate) // Libère la mémoire prélevé par le tableau
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
         free(plate->tab[i]);
-        free(plate->verif[i]);
     }
     free(plate->tab);
-    free(plate->verif);
     free(plate);
 }
 
@@ -246,7 +207,7 @@ int main(int argc, char const *argv[])
 {
     srand(time(NULL));
     int size = 4;
-    game* plate = createGame(size);
+    grille * plate = createGame(size);
     mooveGame(plate);
     freeGame(plate);
     return EXIT_SUCCESS;
