@@ -1,8 +1,9 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "2048.h"
+
+#define DEBUG fprintf(stderr, "[DEBUG]: File: %s, Func: %s, Line: %d\n", __FILE__, __func__, __LINE__);
 
 void vider_buffer(void)	 			// vider le buffer pour éviter le bug des scanf
 {
@@ -151,12 +152,9 @@ void move(grille * plate, int direction)
 void mooveGame(grille * plate)
 {
     char c;
-    int direction;
-    int changement = 0;
     placeRandomNumber(plate);
     do
     {
-        resetVerif(plate);
         if (tryRandomNumber(plate))
             placeRandomNumber(plate);
         else
@@ -166,10 +164,10 @@ void mooveGame(grille * plate)
         }
         printGame(plate);
         scanf("%c", &c);
-        if (c == 'z') {move(plate, HAUT);}
-        else if (c == 'q') {move(plate, GAUCHE);}
-        else if (c == 's') {move(plate, BAS);}
-        else if (c == 'd') {move(plate, DROITE);}
+        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {move(plate, HAUT);}
+        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {move(plate, GAUCHE);}
+        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {move(plate, BAS);}
+        else if (c == 'd' || c == 'D') {move(plate, DROITE);}
         vider_buffer();            
     } while (!(gameIsFinish(plate)));
     printf("PERDU! \n");
@@ -177,17 +175,38 @@ void mooveGame(grille * plate)
 
 grille * createGame(int size) // Créer un tableau vide avec une certaine dimension 
 {
-    grille * plate =(grille *) malloc(sizeof(grille));
-    plate->sizeTab = size;
-    plate->tab = malloc(plate->sizeTab*sizeof(int*));
-    for (int i = 0; i < size; i++)
-        plate->tab[i] = malloc(plate->sizeTab*sizeof(int));
+    grille * plate = (grille *) malloc(sizeof(grille));
+    if (plate == NULL)
+        return NULL;
 
+    plate->sizeTab = size;
+
+    plate->tab = (int **) malloc(plate->sizeTab * sizeof(int*));
+    if (plate->tab == NULL)
+        return NULL;
+    
     for (int i = 0; i < size; i++)
     {
-        for (int j = 0; j < size; j++)
+        plate->tab[i] = (int*) malloc(plate->sizeTab * sizeof(int));
+        if (plate->tab[i] == NULL)
         {
-            plate->tab[i][j] = 0;
+            for (int j = 0; j < i; j++)
+            {
+                free(plate->tab[j]);
+                plate->tab[j] = NULL;
+            }
+            free(plate->tab);
+            plate->tab = NULL;
+            free(plate);
+            plate = NULL;
+            return NULL;
+        }
+        else
+        {
+            for (int j = 0; j < plate->sizeTab; j++)
+            {
+                plate->tab[i][j] = 0;
+            }
         }
     }
     return plate;
@@ -197,10 +216,16 @@ void freeGame(grille * plate) // Libère la mémoire prélevé par le tableau
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
-        free(plate->tab[i]);
+        if (plate->tab[i] != NULL)
+        {
+            free(plate->tab[i]);
+            plate->tab[i] = NULL;
+        }
     }
     free(plate->tab);
+    plate->tab = NULL;
     free(plate);
+    plate->tab = NULL;
 }
 
 int main(int argc, char const *argv[])
@@ -208,6 +233,12 @@ int main(int argc, char const *argv[])
     srand(time(NULL));
     int size = 4;
     grille * plate = createGame(size);
+    if (plate == NULL)
+    {
+        fprintf(stderr, "Impossible de creer de grille de jeu de taille %dx%d\n", size, size);
+        return EXIT_FAILURE;
+    }
+    
     mooveGame(plate);
     freeGame(plate);
     return EXIT_SUCCESS;
