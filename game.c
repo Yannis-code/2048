@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "game.h"
 #include "constantes.h"
 #include "console.h"
 
@@ -66,9 +67,9 @@ int * getTabCourrante(grille * plate, int i, int j, int direction)
     return NULL;
 }
 
-void mergeGrille(grille * plate, int direction)
+int mergeGrille(grille * plate, int direction)
 {
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0, k = 0, change = 0;
     int * curseur;
 
     for (i = 0; i < plate->sizeTab; i++) // 
@@ -84,6 +85,7 @@ void mergeGrille(grille * plate, int direction)
                 *getTabCourrante(plate, i, j, direction) = 0;
                 k++;
                 curseur = getTabCourrante(plate, i, k, direction);
+                change ++;
             }
             else if (*curseur && *curseur - *getTabCourrante(plate, i, j, direction) && *getTabCourrante(plate, i, j, direction))
             {
@@ -93,39 +95,83 @@ void mergeGrille(grille * plate, int direction)
                 {
                     *curseur = *getTabCourrante(plate, i, j, direction);
                     *getTabCourrante(plate, i, j, direction) = 0;
+                    change ++;
                 }
             }
             else if (!*curseur && *getTabCourrante(plate, i, j, direction))
             {
                 *curseur = *getTabCourrante(plate, i, j, direction);
                 *getTabCourrante(plate, i, j, direction) = 0;
+                change ++;
             }
         }
     }
+    return change;
 }
 
 void mooveGame(grille * plate)
 {
     char c;
+    int direction, nbchangement = 1;
     placeRandomNumber(plate);
     do
     {
-        if (tryRandomNumber(plate))
+        if (tryRandomNumber(plate) && nbchangement)
             placeRandomNumber(plate);
-        else
-        {
-            printf("Perdu! \n");
-            return;
-        }
         printGame(plate);
         scanf("%c", &c);
-        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {mergeGrille(plate, HAUT);}
-        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {mergeGrille(plate, GAUCHE);}
-        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {mergeGrille(plate, BAS);}
-        else if (c == 'd' || c == 'D') {mergeGrille(plate, DROITE);}
-        vider_buffer();            
+        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
+        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
+        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
+        else if (c == 'd' || c == 'D') {direction = DROITE;}
+        nbchangement = mergeGrille(plate, direction);
+        save(plate);
+        vider_buffer();
     } while (!(gameIsFinish(plate)));
     printf("PERDU! \n");
+}
+
+void save(grille * plate)
+{
+    FILE * file = fopen("./save.txt", "w+");
+    if (file == NULL)
+        fprintf(stderr, "Impossible d'ouvrir le fichier de sauvegarde\n");
+    fprintf(file, "%d\n%d\n", plate->sizeTab, plate->score);
+    for (int i = 0; i < plate->sizeTab; i++)
+    {
+        for (int j = 0; j < plate->sizeTab; j++)
+        {
+            fprintf(file, "%d ", plate->tab[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+}
+
+grille * load(void)
+{
+    int size = 0;
+    FILE * file = fopen("./save.txt", "r");
+    if (file == NULL)
+        fprintf(stderr, "Impossible d'ouvrir le fichier de sauvegarde\n");
+    fscanf(file, "%d\n", &size);
+    grille * plate = createGame(size);
+    if (plate == NULL)
+    {
+        fclose(file);
+        return NULL;
+    }
+    fscanf(file, "%d\n", &plate->score);
+    for (int i = 0; i < plate->sizeTab; i++)
+    {
+        for (int j = 0; j < plate->sizeTab; j++)
+        {
+            fscanf(file, "%d ", &plate->tab[i][j]);
+        }
+        fscanf(file, "\n");
+    }
+    fclose(file);
+    return plate;
 }
 
 grille * createGame(int size) // Créer un tableau vide avec une certaine dimension 

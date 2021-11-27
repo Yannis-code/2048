@@ -11,9 +11,13 @@ int gameIsFinish(grille * plate);
 
 int * getTabCourrante(grille * plate, int i, int j, int direction);
 
-void mergeGrille(grille * plate, int direction);
+int mergeGrille(grille * plate, int direction);
 
 void mooveGame(grille * plate);
+
+void save(grille * plate);
+
+grille * load(void);
 
 grille * createGame(int size);
 
