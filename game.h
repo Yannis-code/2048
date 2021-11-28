@@ -5,22 +5,22 @@
 
 void placeRandomNumber(grille * plate, int nb); 
 
-int tryRandomNumber(grille * plate);
+int checkFreeSpace(grille * plate);
 
-int gameIsFinish(grille * plate);
+int gameOver(grille * plate);
 
-int * getTabCourrante(grille * plate, int i, int j, int direction);
+int * getArrayPointer(grille * plate, int i, int j, int direction);
 
-int mergeGrille(grille * plate, int direction);
+int updateGrid(grille * plate, int direction);
 
-void mooveGame(grille * plate, int newGame);
+void saveGame(grille * plate);
 
-void save(grille * plate);
+grille * loadGame(int taille);
 
-grille * load(int taille);
+grille * newGrid(int size);
 
-grille * createGame(int size);
+void freeGrid(grille * plate);
 
-void freeGame(grille * plate);
+void consoleGameLoop(grille * plate, int newGame);
 
 #endif

@@ -3,8 +3,6 @@
 #include <time.h>
 
 #include "constantes.h"
-#include "console.h"
-#include "graphique.h"
 #include "game.h"
 
 void menu(int * affichage, int * taille)
@@ -31,16 +29,16 @@ int main(int argc, char const *argv[])
     (affichage != 1 && affichage != 2) || taille < 2 || taille > 16)
         menu(&affichage, &taille);
     
-    if ( (plate = load(taille)) == NULL)
+    if ( (plate = loadGame(taille)) == NULL)
     {
-        plate = createGame(taille);
-        mooveGame(plate, 1);
+        plate = newGrid(taille);
+        consoleGameLoop(plate, 1);
     }
     else
     {
-        mooveGame(plate, 0);
+        consoleGameLoop(plate, 0);
     }
     
-    freeGame(plate);
+    freeGrid(plate);
     return EXIT_SUCCESS;
 }

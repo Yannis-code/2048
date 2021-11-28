@@ -1,24 +1,31 @@
-# fichier Makefile permettant de compiler prog
+# fichier Makefile permettant de compiler le 2048
 CC = gcc
 CFLAGS = -Wall
+LDFLAGS = 
+EXEC = 2048
 LDLIBS = -lm
 
-all : 2048
+all : $(EXEC)
 
-2048 : 2048.o console.o game.o graphique.o
-	$(CC) $(CFLAGS) -o 2048 2048.o console.o game.o graphique.o $(LDLIBS)
+# Recompilation de l'éxecutable final
+2048 : console.o graphique.o game.o 2048.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
-2048.o : 2048.c constantes.h
-	$(CC) $(CFLAGS) -c 2048.c
+# Recompilation du fichier objet game
+game.o : game.c console.o graphique.o
+	$(CC) $(CFLAGS) -c $<
 
-console.o : console.c console.h constantes.h
-	$(CC) $(CFLAGS) -c console.c
+# Recompilation du fichier objet console
+console.o : console.c
+	$(CC) $(CFLAGS) -c $<
 
-game.o : game.c game.h console.c console.h constantes.h
-	$(CC) $(CFLAGS) -c game.c
+# Recompilation du fichier objet graphique
+graphique.o : graphique.c
+	$(CC) $(CFLAGS) -c $<
 
-graphique.o : graphique.c graphique.h
-	$(CC) $(CFLAGS) -c graphique.c
+# Recompilation du fichier objet 2048
+2048.o : 2048.c game.o
+	$(CC) $(CFLAGS) -c $<
 
 clean :
 	rm -f *.o core

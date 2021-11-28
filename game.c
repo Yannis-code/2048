@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 #include "game.h"
-#include "constantes.h"
 #include "console.h"
+#include "graphique.h"
 
 void placeRandomNumber(grille * plate, int nb) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
 {
@@ -23,7 +23,7 @@ void placeRandomNumber(grille * plate, int nb) // Place un "2" à une position l
     }
 }
 
-int tryRandomNumber(grille * plate)
+int checkFreeSpace(grille * plate)
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -36,7 +36,7 @@ int tryRandomNumber(grille * plate)
     return 0;
 }
 
-int gameIsFinish(grille * plate) // Détermine si la partie est terminé
+int gameOver(grille * plate) // Détermine si la partie est terminé
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -57,7 +57,7 @@ int gameIsFinish(grille * plate) // Détermine si la partie est terminé
     return 1;
 }
 
-int * getTabCourrante(grille * plate, int i, int j, int direction)
+int * getArrayPointer(grille * plate, int i, int j, int direction)
 {
     if (direction == DROITE)
         return &plate->tab[i][plate->sizeTab-1-j];
@@ -70,7 +70,7 @@ int * getTabCourrante(grille * plate, int i, int j, int direction)
     return NULL;
 }
 
-int mergeGrille(grille * plate, int direction)
+int updateGrid(grille * plate, int direction)
 {
     int i = 0, j = 0, k = 0, change = 0;
     int * curseur;
@@ -78,33 +78,33 @@ int mergeGrille(grille * plate, int direction)
     for (i = 0; i < plate->sizeTab; i++) // 
     {
         k = 0;
-        curseur = getTabCourrante(plate, i, k, direction);
+        curseur = getArrayPointer(plate, i, k, direction);
         for (j = 1; j < plate->sizeTab; j++) // 
         {
-            if (*curseur && !(*curseur - *getTabCourrante(plate, i, j, direction)))
+            if (*curseur && !(*curseur - *getArrayPointer(plate, i, j, direction)))
             {
                 *curseur *= 2;
                 plate->score += *curseur;
-                *getTabCourrante(plate, i, j, direction) = 0;
+                *getArrayPointer(plate, i, j, direction) = 0;
                 k++;
-                curseur = getTabCourrante(plate, i, k, direction);
+                curseur = getArrayPointer(plate, i, k, direction);
                 change ++;
             }
-            else if (*curseur && *curseur - *getTabCourrante(plate, i, j, direction) && *getTabCourrante(plate, i, j, direction))
+            else if (*curseur && *curseur - *getArrayPointer(plate, i, j, direction) && *getArrayPointer(plate, i, j, direction))
             {
                 k++;
-                curseur = getTabCourrante(plate, i, k, direction);
-                if (curseur != getTabCourrante(plate, i, j, direction))
+                curseur = getArrayPointer(plate, i, k, direction);
+                if (curseur != getArrayPointer(plate, i, j, direction))
                 {
-                    *curseur = *getTabCourrante(plate, i, j, direction);
-                    *getTabCourrante(plate, i, j, direction) = 0;
+                    *curseur = *getArrayPointer(plate, i, j, direction);
+                    *getArrayPointer(plate, i, j, direction) = 0;
                     change ++;
                 }
             }
-            else if (!*curseur && *getTabCourrante(plate, i, j, direction))
+            else if (!*curseur && *getArrayPointer(plate, i, j, direction))
             {
-                *curseur = *getTabCourrante(plate, i, j, direction);
-                *getTabCourrante(plate, i, j, direction) = 0;
+                *curseur = *getArrayPointer(plate, i, j, direction);
+                *getArrayPointer(plate, i, j, direction) = 0;
                 change ++;
             }
         }
@@ -112,33 +112,7 @@ int mergeGrille(grille * plate, int direction)
     return change;
 }
 
-void mooveGame(grille * plate, int newGame)
-{
-    char c;
-    int direction, nbchangement = 1;
-    if (newGame)
-        placeRandomNumber(plate, 2);
-    do
-    {
-        printGame(plate);
-        vider_buffer();
-        scanf("%c", &c);
-        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
-        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
-        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
-        else if (c == 'd' || c == 'D') {direction = DROITE;}
-        nbchangement = mergeGrille(plate, direction);
-        if (tryRandomNumber(plate) && nbchangement)
-            placeRandomNumber(plate, 1);
-        save(plate);
-    } while (!(gameIsFinish(plate)));
-    char deleteFile[40];
-    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
-    system(deleteFile);
-    printf("PERDU! \n");
-}
-
-void save(grille * plate)
+void saveGame(grille * plate)
 {
     char path[30];
     sprintf(path, "./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
@@ -160,7 +134,7 @@ void save(grille * plate)
     fclose(file);
 }
 
-grille * load(int taille)
+grille * loadGame(int taille)
 {
     char path[30];
     sprintf(path, "./games/save_%dx%d.txt", taille, taille);
@@ -171,7 +145,7 @@ grille * load(int taille)
         return NULL;
     }
     
-    grille * plate = createGame(taille);
+    grille * plate = newGrid(taille);
     if (plate == NULL)
     {
         fclose(file);
@@ -190,7 +164,7 @@ grille * load(int taille)
     return plate;
 }
 
-grille * createGame(int size) // Créer un tableau vide avec une certaine dimension 
+grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
 {
     grille * plate = (grille *) malloc(sizeof(grille));
     if (plate == NULL)
@@ -230,7 +204,7 @@ grille * createGame(int size) // Créer un tableau vide avec une certaine dimens
     return plate;
 }
 
-void freeGame(grille * plate) // Libère la mémoire prélevé par le tableau
+void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
 {
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -244,4 +218,30 @@ void freeGame(grille * plate) // Libère la mémoire prélevé par le tableau
     plate->tab = NULL;
     free(plate);
     plate->tab = NULL;
+}
+
+void consoleGameLoop(grille * plate, int newGame)
+{
+    char c;
+    int direction, nbchangement = 1;
+    if (newGame)
+        placeRandomNumber(plate, 2);
+    do
+    {
+        printGame(plate);
+        vider_buffer();
+        scanf("%c", &c);
+        if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
+        else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
+        else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
+        else if (c == 'd' || c == 'D') {direction = DROITE;}
+        nbchangement = updateGrid(plate, direction);
+        if (checkFreeSpace(plate) && nbchangement)
+            placeRandomNumber(plate, 1);
+        saveGame(plate);
+    } while (!(gameOver(plate)));
+    char deleteFile[40];
+    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    system(deleteFile);
+    printf("PERDU! \n");
 }

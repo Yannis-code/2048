@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "constantes.h"
 #include "console.h"
 
 void vider_buffer(void)	 			// vider le buffer pour éviter le bug des scanf
