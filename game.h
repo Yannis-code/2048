@@ -3,7 +3,7 @@
 
 #include "constantes.h"
 
-void placeRandomNumber(grille * plate); 
+void placeRandomNumber(grille * plate, int nb); 
 
 int tryRandomNumber(grille * plate);
 
@@ -13,11 +13,11 @@ int * getTabCourrante(grille * plate, int i, int j, int direction);
 
 int mergeGrille(grille * plate, int direction);
 
-void mooveGame(grille * plate);
+void mooveGame(grille * plate, int newGame);
 
 void save(grille * plate);
 
-grille * load(void);
+grille * load(int taille);
 
 grille * createGame(int size);
 

@@ -7,18 +7,40 @@
 #include "graphique.h"
 #include "game.h"
 
+void menu(int * affichage, int * taille)
+{
+    printf("Quelle type d'interface voulez vous lancer? [1:Console] [2:Graphique]\n");
+    while (!scanf("%d", affichage) || (*affichage != 1 && *affichage != 2))
+    {
+        printf("Quelle type d'interface voulez vous lancer? [1:Console] [2:Graphique]\n");
+    }
+    printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
+    while (!scanf("%d", taille) || *taille < 2 || *taille > 16)
+    {
+        printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
+    }
+}
+
 int main(int argc, char const *argv[])
 {
+    int affichage = 0, taille = 0;
+    grille * plate;
     srand(time(NULL));
-    int size = 4;
-    grille * plate = load(); //createGame(size);
-    if (plate == NULL)
+
+    if (argc < 3 || !sscanf(argv[1], "%d", &affichage) || !sscanf(argv[2], "%d", &taille) ||
+    (affichage != 1 && affichage != 2) || taille < 2 || taille > 16)
+        menu(&affichage, &taille);
+    
+    if ( (plate = load(taille)) == NULL)
     {
-        fprintf(stderr, "Impossible de creer de grille de jeu de taille %dx%d\n", size, size);
-        return EXIT_FAILURE;
+        plate = createGame(taille);
+        mooveGame(plate, 1);
+    }
+    else
+    {
+        mooveGame(plate, 0);
     }
     
-    mooveGame(plate);
     freeGame(plate);
     return EXIT_SUCCESS;
 }

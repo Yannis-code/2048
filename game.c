@@ -5,19 +5,22 @@
 #include "constantes.h"
 #include "console.h"
 
-void placeRandomNumber(grille * plate) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
+void placeRandomNumber(grille * plate, int nb) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
 {
-    int i, j, x;
-    do {
-        i = (rand() % plate->sizeTab);
-        j = (rand() % plate->sizeTab);
-    } while (plate->tab[i][j] != 0);
+    int k, i, j, x;
+    for (k = 0; k < nb; k++)
+    {
+        do {
+            i = (rand() % plate->sizeTab);
+            j = (rand() % plate->sizeTab);
+        } while (plate->tab[i][j] != 0);
 
-    x = rand() % 2;
-    if (x)
-        plate->tab[i][j] = 2;
-    else
-        plate->tab[i][j] = 4;
+        x = rand() % 2;
+        if (x)
+            plate->tab[i][j] = 2;
+        else
+            plate->tab[i][j] = 4;
+    }
 }
 
 int tryRandomNumber(grille * plate)
@@ -109,34 +112,43 @@ int mergeGrille(grille * plate, int direction)
     return change;
 }
 
-void mooveGame(grille * plate)
+void mooveGame(grille * plate, int newGame)
 {
     char c;
     int direction, nbchangement = 1;
-    placeRandomNumber(plate);
+    if (newGame)
+        placeRandomNumber(plate, 2);
     do
     {
-        if (tryRandomNumber(plate) && nbchangement)
-            placeRandomNumber(plate);
         printGame(plate);
+        vider_buffer();
         scanf("%c", &c);
         if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
         else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
         else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
         else if (c == 'd' || c == 'D') {direction = DROITE;}
         nbchangement = mergeGrille(plate, direction);
+        if (tryRandomNumber(plate) && nbchangement)
+            placeRandomNumber(plate, 1);
         save(plate);
-        vider_buffer();
     } while (!(gameIsFinish(plate)));
+    char deleteFile[40];
+    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    system(deleteFile);
     printf("PERDU! \n");
 }
 
 void save(grille * plate)
 {
-    FILE * file = fopen("./save.txt", "w+");
+    char path[30];
+    sprintf(path, "./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    FILE * file = fopen(path, "w+");
     if (file == NULL)
-        fprintf(stderr, "Impossible d'ouvrir le fichier de sauvegarde\n");
-    fprintf(file, "%d\n%d\n", plate->sizeTab, plate->score);
+    {
+        fprintf(stderr, "Impossible de sauvegarder la partie\n");
+        return;
+    }
+    fprintf(file, "%d\n", plate->score);
     for (int i = 0; i < plate->sizeTab; i++)
     {
         for (int j = 0; j < plate->sizeTab; j++)
@@ -148,14 +160,18 @@ void save(grille * plate)
     fclose(file);
 }
 
-grille * load(void)
+grille * load(int taille)
 {
-    int size = 0;
-    FILE * file = fopen("./save.txt", "r");
+    char path[30];
+    sprintf(path, "./games/save_%dx%d.txt", taille, taille);
+    FILE * file = fopen(path, "r");
     if (file == NULL)
-        fprintf(stderr, "Impossible d'ouvrir le fichier de sauvegarde\n");
-    fscanf(file, "%d\n", &size);
-    grille * plate = createGame(size);
+    {
+        fprintf(stderr, "Aucune sauvegarde disponible\n");
+        return NULL;
+    }
+    
+    grille * plate = createGame(taille);
     if (plate == NULL)
     {
         fclose(file);
