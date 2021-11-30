@@ -15,7 +15,7 @@ void menu(int * affichage, int * taille)
     printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
     while (!scanf("%d", taille) || *taille < 2 || *taille > 16)
     {
-        printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
+        printf("Quelle taille de grille voulez vous jouer ? [min: 2, max: 16]\n");
     }
 }
 
