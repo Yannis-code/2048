@@ -11,7 +11,7 @@ all : $(EXEC)
 2048 : console.o graphique.o game.o 2048.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 	@echo "========== Compilation terminé\n========== Execution du programme compilé\n\n"
-	@./$(EXEC)
+#	@./$(EXEC)
 
 # Recompilation du fichier objet game
 game.o : game.c console.o graphique.o
