@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL/SDL_ttf.h>
+#include <SDL/SDL_audio.h>
+
 #include "game.h"
 #include "console.h"
 #include "graphique.h"
@@ -211,13 +216,10 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
         if (plate->tab[i] != NULL)
         {
             free(plate->tab[i]);
-            plate->tab[i] = NULL;
         }
     }
     free(plate->tab);
-    plate->tab = NULL;
     free(plate);
-    plate->tab = NULL;
 }
 
 void consoleGameLoop(grille * plate, int newGame)
@@ -244,4 +246,39 @@ void consoleGameLoop(grille * plate, int newGame)
     sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
     system(deleteFile);
     printf("PERDU! \n");
+}
+
+void graphiqueGameLoop(grille * plate, int newGame)
+{
+    int nbchangement = 1, mainloop = 1, event = -10;
+    SDL_Surface * ecran = NULL;
+    if ((ecran = initSDL(ecran)) == NULL)
+    {
+        fprintf(stderr, "Impossible de lancer une interface graphique\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (newGame)
+        placeRandomNumber(plate, 2);
+    do
+    {
+        displayGrid(ecran, plate, 800, 1000);
+        event = eventSDL();
+        if (event == -1)
+            {mainloop = 0; printf("OUIOUIOUI\n");}
+        if (event != -10 && event != -1)
+        {
+            nbchangement = updateGrid(plate, event);
+            if (checkFreeSpace(plate) && nbchangement)
+                placeRandomNumber(plate, 1);
+            saveGame(plate);
+        }
+    } while (!(gameOver(plate)) && mainloop);
+    char deleteFile[40];
+    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    system(deleteFile);
+    printf("PERDU! \n");
+
+    SDL_FreeSurface(ecran);
+    quitSDL();
 }

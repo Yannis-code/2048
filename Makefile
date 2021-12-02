@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -Wall
 LDFLAGS = 
 EXEC = 2048
-LDLIBS = -lm
+LDLIBS = -lm -l SDL -l SDL_ttf -l SDL_gfx
 
 all : $(EXEC)
 

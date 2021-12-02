@@ -32,13 +32,21 @@ int main(int argc, char const *argv[])
     if ( (plate = loadGame(taille)) == NULL)
     {
         plate = newGrid(taille);
-        consoleGameLoop(plate, 1);
+        if (affichage == 1)
+            consoleGameLoop(plate, 1);
+        else
+            graphiqueGameLoop(plate, 1);
+        
+        
     }
     else
     {
-        consoleGameLoop(plate, 0);
+        if (affichage == 1)
+            consoleGameLoop(plate, 0);
+        else
+            graphiqueGameLoop(plate, 0);
     }
-    
+
     freeGrid(plate);
     return EXIT_SUCCESS;
 }
