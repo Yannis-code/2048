@@ -1,16 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <string.h>
+
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_audio.h>
+#include <SDL/SDL_rotozoom.h>
 
 #include "constantes.h"
 #include "graphique.h"
 
 SDL_Surface * initSDL(SDL_Surface * ecran)
 {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) == -1) // Démarrage de la SDL. Si erreur :
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) // Démarrage de la SDL. Si erreur :
     {
         fprintf(stderr, "Erreur d'initialisation de la SDL : %s\n", SDL_GetError()); // Écriture de l'erreur
         return NULL; // On retourne erreur
@@ -24,7 +28,7 @@ SDL_Surface * initSDL(SDL_Surface * ecran)
         return NULL; // On retourne erreur
     }
 
-    if(TTF_Init() == -1)
+    if(TTF_Init() != 0)
     {
         fprintf(stderr, "Erreur d'initialisation de TTF_Init : %s\n", TTF_GetError());
         return NULL; // On retourne erreur
@@ -36,7 +40,7 @@ SDL_Surface * initSDL(SDL_Surface * ecran)
 int eventSDL(void)
 {
     SDL_Event event;
-    SDL_WaitEvent(&event);
+    SDL_PollEvent(&event);
     switch(event.type)
     {
         case SDL_QUIT:
@@ -71,68 +75,86 @@ int eventSDL(void)
     }
 }
 
-SDL_Surface * getFont(int score)
+float getFontScale(int strLen, int charWidth, int charHeight, int maxWidth, int maxHeight)
 {
-    TTF_Font *police = NULL;
-    police = TTF_OpenFont("angelina.ttf", 65);
+    float diagoFont = sqrtf(pow(strLen * charWidth, 2) + powf(charHeight, 2));
+    float diagoOut = sqrtf(powf(maxWidth, 2) + powf(maxHeight, 2));
+    if (diagoFont > diagoOut)
+        return diagoOut / diagoFont;
+    return 1.0;    
+}
+
+SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight, int maxWidth, int maxHeight)
+{
     SDL_Color couleurNoire = {0, 0, 0};
+    SDL_Surface * finalSurface;
 
-    SDL_Surface * texte = TTF_RenderText_Blended(police, "Salut les Zér0s !", couleurNoire);
+    float zoom = getFontScale(strlen(str), charWidth, charHeight, 0.8 * maxWidth, 0.8 * maxHeight);
+    
+    SDL_Surface * texte = TTF_RenderText_Blended(font, str, couleurNoire);
+    
+    finalSurface = rotozoomSurface(texte, 0.0, zoom, 1);
 
-    //TTF_CloseFont(police); /* Doit être avant TTF_Quit() */
-    return texte;
+    SDL_FreeSurface(texte);
+    
+    return finalSurface;
 }
 
 int * getColorRGB(int value)
 {
     int * RGB = (int *) malloc(3*sizeof(int));
-    if (value == 0)
-    {
-        RGB[0] = 214; RGB[1] = 210; RGB[2] = 210; //214, 210, 210
-    }
-    else if (value == 2)
-    {
-        RGB[0] = 214; RGB[1] = 100; RGB[2] = 100; //214, 210, 210
-    }
-    else if (value == 4)
-    {
-        RGB[0] = 214; RGB[1] = 75; RGB[2] = 75; //214, 210, 210
-    }
-    else if (value == 8)
-    {
-        RGB[0] = 214; RGB[1] = 50; RGB[2] = 50; //214, 210, 210
-    }
-    else if (value == 16)
-    {
-        RGB[0] = 214; RGB[1] = 25; RGB[2] = 25; //214, 210, 210
-    }
-    else
-    {
-        RGB[0] = 214; RGB[1] = 0; RGB[2] = 0; //214, 210, 210
+    if (value == 0) {RGB[0] = 205; RGB[1] = 193; RGB[2] = 180;}
+    else {
+        switch (value) 
+        {
+        case 2:   RGB[0] = 238; RGB[1] = 228; RGB[2] = 218; break;
+        case 4:   RGB[0] = 238; RGB[1] = 225; RGB[2] = 201; break;
+        case 8:   RGB[0] = 243; RGB[1] = 178; RGB[2] = 122; break;
+        case 16:  RGB[0] = 246; RGB[1] = 150; RGB[2] = 100; break;
+        case 32:  RGB[0] = 247; RGB[1] = 124; RGB[2] = 95;  break;
+        case 64:  RGB[0] = 247; RGB[1] = 95;  RGB[2] = 59;  break;
+        case 128: RGB[0] = 237; RGB[1] = 208; RGB[2] = 115; break;
+        case 256: RGB[0] = 234; RGB[1] = 178; RGB[2] = 24;  break;
+        default:
+            RGB[0] = ((RGB[0] = ((value*70)%255)) < 100) ? RGB[0] + 155 : RGB[0]; 
+            RGB[1] = ((RGB[1] = ((value*20)%255)) < 100) ? RGB[1] + 155 : RGB[1]; 
+            RGB[2] = ((RGB[2] = ((value*30)%255)) < 100) ? RGB[2] + 155 : RGB[2]; 
+            break;
+        }
     }
     return RGB;
 }
 
 void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int windowHeight)
 {
-    TTF_Font *police = NULL;
-    police = TTF_OpenFont("angelina.ttf", 40);
-    SDL_Color couleurNoire = {0, 0, 0};
-
     float a =0.1;
     int intervale = (9* windowWidth/100)/(a * plate->sizeTab + plate->sizeTab + a);
     int sizeImage = intervale * 10;
     int sizeGrid = sizeImage * (a*plate->sizeTab+plate->sizeTab+a);
+
+    SDL_Rect posgrid, posImage, posTxt;
     
+    int charWidth, charHeight;
+    TTF_Font * police = TTF_OpenFont("Monospace.ttf", 300);
+    TTF_SizeText(police, "0", &charWidth, &charHeight);
+
     SDL_Surface * grid = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeGrid, sizeGrid, 32, 0, 0, 0, 0);
     SDL_Surface * tile = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeImage, sizeImage, 32, 0, 0, 0, 0);
-    SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 100, 100, 100));
-    SDL_FillRect(grid, NULL, SDL_MapRGB(ecran->format, 193, 184, 184));;
-    SDL_Rect posgrid, posImage, posTxt;
+    SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 250, 248, 239));
+    SDL_FillRect(grid, NULL, SDL_MapRGB(ecran->format, 187, 173, 160));
 
-    posgrid.x = windowWidth/2 - sizeGrid/2;
+    char renderText[30] = "";
+    sprintf(renderText, "Score: %d", plate->score);
+    SDL_Surface * score = getFont(police, renderText, charWidth, charHeight, 0.4 * windowWidth, 0.3*windowHeight);
+    posTxt.x = windowWidth/2 - score->w/2;
+    posTxt.y = 0.05 * windowHeight;
+    SDL_BlitSurface(score, NULL, ecran, &posTxt);
+    SDL_FreeSurface(score);
+
+    posgrid.x = (windowWidth - sizeGrid)/2;
     posgrid.y = windowHeight-sizeGrid - 0.05 * windowHeight;
     SDL_BlitSurface(grid, NULL, ecran, &posgrid);
+    SDL_FreeSurface(grid);
     
     for (int i = 0; i < plate->sizeTab; i++)
     {
@@ -142,21 +164,26 @@ void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int window
             posImage.y = posgrid.y + (i+1) * intervale + (i * sizeImage);
             int * color = getColorRGB(plate->tab[i][j]);
             SDL_FillRect(tile, NULL, SDL_MapRGB(ecran->format, color[0], color[1], color[2]));
+            free(color); color = NULL;
             SDL_BlitSurface(tile, NULL, ecran, &posImage);
-            if (police != NULL)
-            {
-                posTxt.x =  posImage.x;
-                posTxt.y = posImage.y;
-                char txt[15] = "";
-                sprintf(txt, "%d", plate->tab[i][j]);
-                SDL_Surface * texte = TTF_RenderText_Blended(police, txt, couleurNoire);
-                SDL_BlitSurface(texte, NULL, ecran, &posImage);
-            }
             
-            // Print TTF
+            if (plate->tab[i][j])
+            {
+                char renderText[20] = "";
+                sprintf(renderText, "%d", plate->tab[i][j]);
+                SDL_Surface * texte = getFont(police, renderText, charWidth, charHeight, sizeImage, sizeImage);
+            
+                posTxt.x = posImage.x + sizeImage/2 - texte->w/2;
+                posTxt.y = posImage.y + sizeImage/2 - texte->h/2;
+                
+                SDL_BlitSurface(texte, NULL, ecran, &posTxt);
+                SDL_FreeSurface(texte);
+            }
         } 
     }
     SDL_Flip(ecran);
+    TTF_CloseFont(police);
+    SDL_FreeSurface(tile);
 }
 
 int quitSDL(void)
@@ -165,6 +192,3 @@ int quitSDL(void)
     SDL_Quit();
     return EXIT_SUCCESS;
 }
-
-#include "constantes.h"
-#include "graphique.h"

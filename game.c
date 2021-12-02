@@ -216,13 +216,10 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
         if (plate->tab[i] != NULL)
         {
             free(plate->tab[i]);
-            plate->tab[i] = NULL;
         }
     }
     free(plate->tab);
-    plate->tab = NULL;
     free(plate);
-    plate->tab = NULL;
 }
 
 void consoleGameLoop(grille * plate, int newGame)
@@ -253,9 +250,8 @@ void consoleGameLoop(grille * plate, int newGame)
 
 void graphiqueGameLoop(grille * plate, int newGame)
 {
-    int direction, nbchangement = 1, mainloop = 1, event = -10;
+    int nbchangement = 1, mainloop = 1, event = -10;
     SDL_Surface * ecran = NULL;
-    //SDL_Event event;
     if ((ecran = initSDL(ecran)) == NULL)
     {
         fprintf(stderr, "Impossible de lancer une interface graphique\n");
@@ -267,16 +263,12 @@ void graphiqueGameLoop(grille * plate, int newGame)
     do
     {
         displayGrid(ecran, plate, 800, 1000);
-        printGame(plate);
         event = eventSDL();
         if (event == -1)
-            mainloop = 0;
-        else
-            direction = event;
-        if (direction != -10)
+            {mainloop = 0; printf("OUIOUIOUI\n");}
+        if (event != -10 && event != -1)
         {
-            printf("Direction: %d\n", direction);
-            nbchangement = updateGrid(plate, direction);
+            nbchangement = updateGrid(plate, event);
             if (checkFreeSpace(plate) && nbchangement)
                 placeRandomNumber(plate, 1);
             saveGame(plate);
