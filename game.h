@@ -23,4 +23,6 @@ void freeGrid(grille * plate);
 
 void consoleGameLoop(grille * plate, int newGame);
 
+void graphiqueGameLoop(grille * plate, int newGame);
+
 #endif

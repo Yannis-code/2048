@@ -15,7 +15,7 @@ void menu(int * affichage, int * taille)
     printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
     while (!scanf("%d", taille) || *taille < 2 || *taille > 16)
     {
-        printf("Quelle taille de grille voulez vous jouer ? [min: 2, max: 16]\n");
+        printf("Quelle taille de grille voulez vous jouer? [min: 2, max: 16]\n");
     }
 }
 
@@ -32,13 +32,21 @@ int main(int argc, char const *argv[])
     if ( (plate = loadGame(taille)) == NULL)
     {
         plate = newGrid(taille);
-        consoleGameLoop(plate, 1);
+        if (affichage == 1)
+            consoleGameLoop(plate, 1);
+        else
+            graphiqueGameLoop(plate, 1);
+        
+        
     }
     else
     {
-        consoleGameLoop(plate, 0);
+        if (affichage == 1)
+            consoleGameLoop(plate, 0);
+        else
+            graphiqueGameLoop(plate, 0);
     }
-    
+
     freeGrid(plate);
     return EXIT_SUCCESS;
 }
