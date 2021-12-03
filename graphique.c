@@ -132,83 +132,120 @@ int getPoxer2(int valeur)
     return power;
 }
 
-void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont, int windowWidth, int windowHeight)
+gameTextures * initGraphicAssets(int maxTheoricTile)
 {
+    gameTextures * gameAsset = (gameTextures *) malloc(sizeof(gameTextures));
+    gameAsset->grid = (rect *) malloc(sizeof(rect));
+    gameAsset->tile = (rect *) malloc(sizeof(rect));
+    gameAsset->font = (font *) malloc(sizeof(font));
+    gameAsset->tilesRendered = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
+    return gameAsset;
+}
+
+void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight)
+{
+    char textToDisplay[50] = "";
     //Calcul des dimension des zones d'affichage
     float a =0.1;
     int intervale = (9* windowWidth/100)/(a * plate->sizeTab + plate->sizeTab + a);
     int sizeImage = intervale * 10;
     int sizeGrid = sizeImage * (a*plate->sizeTab+plate->sizeTab+a);
 
-    SDL_Surface * grid = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeGrid, sizeGrid, 32, 0, 0, 0, 0);
-    SDL_Surface * tile = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeImage, sizeImage, 32, 0, 0, 0, 0);
-    SDL_Rect posgrid, posImage, posTxt;
+    SDL_FillRect(gameAsset->ecran, NULL, SDL_MapRGB(gameAsset->ecran->format, 250, 248, 239));
     
-    int charWidth, charHeight;
-    TTF_Font * police = TTF_OpenFont("./roboto-mono/RobotoMono-Medium.ttf", 150);
-    TTF_SizeText(police, "0", &charWidth, &charHeight);
-    
-    SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 250, 248, 239));
-    SDL_FillRect(grid, NULL, SDL_MapRGB(ecran->format, 187, 173, 160));
+    SDL_Rect posTxt;
 
-    char renderText[30] = "";
-    sprintf(renderText, "Score: %d", plate->score);
-    SDL_Surface * score = getFont(police, renderText, charWidth, charHeight, 0.4 * windowWidth, 0.3*windowHeight);
-    posTxt.x = windowWidth/2 - score->w/2;
+    // Initialisation de la grille si elle n'existe pas déjà
+    if (gameAsset->grid->surface == NULL)
+    {
+        gameAsset->grid->surface = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeGrid, sizeGrid, 32, 0, 0, 0, 0);
+        gameAsset->grid->box.x = (windowWidth - sizeGrid)/2;
+        gameAsset->grid->box.y = windowHeight-sizeGrid - 0.05 * windowHeight;
+        SDL_FillRect(gameAsset->grid->surface, NULL, SDL_MapRGB(gameAsset->ecran->format, 187, 173, 160));
+    }
+    // Initialisation de la case si elle n'existe pas déjà
+    if (gameAsset->tile->surface == NULL)
+    {
+        gameAsset->tile->surface = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeImage, sizeImage, 32, 0, 0, 0, 0);
+    }
+    
+    // Initialisation de la police si elle n'existe pas déjà
+    if (gameAsset->font->font == NULL)
+    {
+        gameAsset->font->font = TTF_OpenFont("./roboto-mono/RobotoMono-Medium.ttf", 150);
+        TTF_SizeText(gameAsset->font->font, "0", &(gameAsset->font->charWidth), &(gameAsset->font->charHeight));
+    }
+    
+
+    sprintf(textToDisplay, "Score: %d", plate->score);
+    SDL_Surface * text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * windowWidth, 0.3*windowHeight);
+    posTxt.x = windowWidth/2 - text->w/2;
     posTxt.y = 0.05 * windowHeight;
-    SDL_BlitSurface(score, NULL, ecran, &posTxt);
-    SDL_FreeSurface(score);
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
     
-    char renderTextbestScore[50] = "";
-    sprintf(renderTextbestScore, "Meilleur score: %d", plate->bestScore);
-    SDL_Surface * bestScore = getFont(police, renderTextbestScore, charWidth, charHeight, 0.4 * windowWidth, 0.3*windowHeight);
-    posTxt.x = windowWidth/2 - bestScore->w/2;
+    sprintf(textToDisplay, "Meilleur score: %d", plate->bestScore);
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * windowWidth, 0.3*windowHeight);
+    posTxt.x = windowWidth/2 - text->w/2;
     posTxt.y = 0.15 * windowHeight;
-    SDL_BlitSurface(bestScore, NULL, ecran, &posTxt);
-    SDL_FreeSurface(bestScore);
-
-    posgrid.x = (windowWidth - sizeGrid)/2;
-    posgrid.y = windowHeight-sizeGrid - 0.05 * windowHeight;
-    SDL_BlitSurface(grid, NULL, ecran, &posgrid);
-    SDL_FreeSurface(grid);
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
+    
+    SDL_BlitSurface(gameAsset->grid->surface, NULL, gameAsset->ecran, &(gameAsset->grid->box));
     
     for (int i = 0; i < plate->sizeTab; i++)
     {
         for (int j = 0; j < plate->sizeTab; j++)
         {
-            posImage.x = posgrid.x + (j+1) * intervale + (j * sizeImage);
-            posImage.y = posgrid.y + (i+1) * intervale + (i * sizeImage);
+            gameAsset->tile->box.x = gameAsset->grid->box.x + (j+1) * intervale + (j * sizeImage);
+            gameAsset->tile->box.y = gameAsset->grid->box.y + (i+1) * intervale + (i * sizeImage);
             int * color = getColorRGB(plate->tab[i][j]);
-            SDL_FillRect(tile, NULL, SDL_MapRGB(ecran->format, color[0], color[1], color[2]));
+            SDL_FillRect(gameAsset->tile->surface, NULL, SDL_MapRGB(gameAsset->ecran->format, color[0], color[1], color[2]));
             free(color); color = NULL;
-            SDL_BlitSurface(tile, NULL, ecran, &posImage);
+            SDL_BlitSurface(gameAsset->tile->surface, NULL, gameAsset->ecran, &(gameAsset->tile->box));
             
             if (plate->tab[i][j])
             {
-                char renderText[20] = "";
-                sprintf(renderText, "%d", plate->tab[i][j]);
+                sprintf(textToDisplay, "%s", "");
+                sprintf(textToDisplay, "%d", plate->tab[i][j]);
                 
                 int powerTile = getPoxer2(plate->tab[i][j]);
-                if (renderedFont[powerTile] == NULL)
-                    renderedFont[powerTile] = getFont(police, renderText, charWidth, charHeight, 0.8 * sizeImage, 0.8 * sizeImage);
+                if (gameAsset->tilesRendered[powerTile] == NULL)
+                    gameAsset->tilesRendered[powerTile] = getFont(gameAsset->font->font, textToDisplay,
+                    gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage);
                 
-                SDL_Surface * texte = renderedFont[powerTile];
+                SDL_Surface * texte = gameAsset->tilesRendered[powerTile];
             
-                posTxt.x = posImage.x + sizeImage/2 - texte->w/2;
-                posTxt.y = posImage.y + sizeImage/2 - texte->h/2;
+                posTxt.x = gameAsset->tile->box.x + sizeImage/2 - texte->w/2;
+                posTxt.y = gameAsset->tile->box.y + sizeImage/2 - texte->h/2;
                 
-                SDL_BlitSurface(texte, NULL, ecran, &posTxt);
+                SDL_BlitSurface(texte, NULL, gameAsset->ecran, &posTxt);
             }
         }
     }
-    SDL_Flip(ecran);
-    TTF_CloseFont(police);
-    SDL_FreeSurface(tile);
+    SDL_Flip(gameAsset->ecran);
 }
 
-int quitSDL(void)
+void freeGameTextures(grille* plate, gameTextures * gameAsset)
 {
-    // Libération des surfaces etc
-    SDL_Quit();
-    return EXIT_SUCCESS;
+    for (int i = 0; i < (plate->sizeTab * plate->sizeTab)+1; i++)
+        if (gameAsset->tilesRendered[i] != NULL)
+            SDL_FreeSurface(gameAsset->tilesRendered[i]);
+
+    if (gameAsset->font->font != NULL)
+        TTF_CloseFont(gameAsset->font->font);
+    free(gameAsset->font);
+
+    if (gameAsset->grid->surface != NULL)
+        SDL_FreeSurface(gameAsset->grid->surface);
+    free(gameAsset->grid);
+
+    if (gameAsset->tile->surface != NULL)
+        SDL_FreeSurface(gameAsset->tile->surface);
+    free(gameAsset->grid);
+    SDL_FreeSurface(gameAsset->ecran);
+    TTF_Quit();
+    //SDL_Quit();
 }

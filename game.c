@@ -291,10 +291,9 @@ void consoleGameLoop(grille * plate, int newGame)
 void graphiqueGameLoop(grille * plate, int newGame)
 {
     int nbchangement = 1, mainloop = 1, event = -10;
-    int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;
-    SDL_Surface * ecran = NULL;
-    SDL_Surface ** renderedFont = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
-    if ((ecran = initSDL(ecran)) == NULL)
+    int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;  
+    gameTextures * gameAsset = initGraphicAssets(maxTheoricTile);
+    if ((gameAsset->ecran = initSDL(gameAsset->ecran)) == NULL)
     {
         fprintf(stderr, "Impossible de lancer une interface graphique\n");
         exit(EXIT_FAILURE);
@@ -304,11 +303,11 @@ void graphiqueGameLoop(grille * plate, int newGame)
         placeRandomNumber(plate, 2);
     do
     {
-        displayGrid(ecran, plate, renderedFont, 800, 1000);
+        displayGrid(plate, gameAsset, 800, 1000);
         event = eventSDL();
         if (event == -1)
             mainloop = 0;
-        if (event != -10 && event != -1)
+        if (event != -10 && event != -1 && !gameOver(plate))
         {
             nbchangement = updateGrid(plate, event);
             if (checkFreeSpace(plate) && nbchangement)
@@ -318,24 +317,13 @@ void graphiqueGameLoop(grille * plate, int newGame)
         if (plate->score >= plate->bestScore)
             plate->bestScore = plate->score;
         
-    } while (!(gameOver(plate)) && mainloop);
-    if (event != -1)
+    } while (mainloop);
+    if (gameOver(plate))
     {
         char deleteFile[40];
         sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
         system(deleteFile);
         printf("PERDU! \n");
-    }
-
-    SDL_FreeSurface(ecran);
-    for (int i = 0; i < maxTheoricTile; i++)
-    {
-        if (renderedFont[i] != NULL)
-        {
-            SDL_FreeSurface(renderedFont[i]);
-        }
-    }
-    free(renderedFont);
-    
-    quitSDL();
+    }    
+    freeGameTextures(plate, gameAsset);
 }
