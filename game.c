@@ -121,6 +121,7 @@ void saveGame(grille * plate)
 {
     char path[30];
     sprintf(path, "./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    
     FILE * file = fopen(path, "w+");
     if (file == NULL)
     {
@@ -137,6 +138,29 @@ void saveGame(grille * plate)
         fprintf(file, "\n");
     }
     fclose(file);
+
+    int bestScore;
+    char path2[100];
+    sprintf(path2, "./games/bestScore_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    FILE * file2 = fopen(path2, "r");
+    if (file2 == NULL)
+    {
+        file2 = fopen(path2, "w+");
+        if (file2 == NULL)
+        {
+            fprintf(stderr, "Impossible de sauvegarder le score\n");
+            return;
+        }
+        bestScore = -1;
+    }
+    fscanf(file2, "%d", &bestScore);
+    if (plate->score > bestScore)
+    {
+        fclose(file2);
+        FILE * file2 = fopen(path2, "w+");
+        fprintf(file2, "%d", plate->score);
+    }
+    fclose(file2);
 }
 
 grille * loadGame(int taille)
@@ -166,7 +190,23 @@ grille * loadGame(int taille)
         fscanf(file, "\n");
     }
     fclose(file);
+    plate->bestScore = loadBestScore(taille);
     return plate;
+}
+
+int loadBestScore(int taille)
+{
+    int bestScore;
+    char path2[100];
+    sprintf(path2, "./games/bestScore_%dx%d.txt", taille, taille);
+    FILE * file2 = fopen(path2, "r");
+    if (file2 == NULL)
+    {
+        return 0;
+    }
+    fscanf(file2, "%d", &bestScore);
+    return bestScore;
+    fclose(file2);
 }
 
 grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
@@ -222,7 +262,6 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
     free(plate);
 }
 
-
 int getMaxTheoricalTile(int gridSize)
 {
     int maxScore = 8;
@@ -230,7 +269,6 @@ int getMaxTheoricalTile(int gridSize)
         maxScore += maxScore;
     return maxScore;
 }
-
 
 void consoleGameLoop(grille * plate, int newGame)
 {
@@ -285,6 +323,9 @@ void graphiqueGameLoop(grille * plate, int newGame)
                 placeRandomNumber(plate, 1);
             saveGame(plate);
         }
+        if (plate->score >= plate->bestScore)
+            plate->bestScore = plate->score;
+        
     } while (!(gameOver(plate)) && mainloop);
     char deleteFile[40];
     sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
