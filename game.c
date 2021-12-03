@@ -319,10 +319,13 @@ void graphiqueGameLoop(grille * plate, int newGame)
             plate->bestScore = plate->score;
         
     } while (!(gameOver(plate)) && mainloop);
-    char deleteFile[40];
-    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
-    system(deleteFile);
-    printf("PERDU! \n");
+    if (event != -1)
+    {
+        char deleteFile[40];
+        sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+        system(deleteFile);
+        printf("PERDU! \n");
+    }
 
     SDL_FreeSurface(ecran);
     for (int i = 0; i < maxTheoricTile; i++)
