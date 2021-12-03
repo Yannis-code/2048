@@ -154,9 +154,17 @@ void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont
     sprintf(renderText, "Score: %d", plate->score);
     SDL_Surface * score = getFont(police, renderText, charWidth, charHeight, 0.4 * windowWidth, 0.3*windowHeight);
     posTxt.x = windowWidth/2 - score->w/2;
-    posTxt.y = 0.05 * windowHeight;
+    posTxt.y = 0.025 * windowHeight;
     SDL_BlitSurface(score, NULL, ecran, &posTxt);
     SDL_FreeSurface(score);
+
+    char renderTextBestScore[50] = "";
+    sprintf(renderTextBestScore, "Meilleur score: %d", plate->bestScore);
+    SDL_Surface * bestScore = getFont(police, renderTextBestScore, charWidth, charHeight, 0.4 * windowWidth, 0.3*windowHeight);
+    posTxt.x = windowWidth/2 - bestScore->w/2;
+    posTxt.y = 0.125 * windowHeight;
+    SDL_BlitSurface(bestScore, NULL, ecran, &posTxt);
+    SDL_FreeSurface(bestScore);
 
     posgrid.x = (windowWidth - sizeGrid)/2;
     posgrid.y = windowHeight-sizeGrid - 0.05 * windowHeight;
@@ -176,12 +184,14 @@ void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont
             
             if (plate->tab[i][j])
             {
-                char renderText[20] = "";
-                sprintf(renderText, "%d", plate->tab[i][j]);
                 
                 int powerTile = getPoxer2(plate->tab[i][j]);
                 if (renderedFont[powerTile] == NULL)
+                {
+                    char renderText[20] = "";
+                    sprintf(renderText, "%d", plate->tab[i][j]);
                     renderedFont[powerTile] = getFont(police, renderText, charWidth, charHeight, 0.8 * sizeImage, 0.8 * sizeImage);
+                }
                 
                 SDL_Surface * texte = renderedFont[powerTile];
             
