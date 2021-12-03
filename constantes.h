@@ -9,6 +9,7 @@ typedef struct Ggrille
 {
     int ** tab;
     int score;
+    int bestScore;
     int sizeTab;
 } grille;
 

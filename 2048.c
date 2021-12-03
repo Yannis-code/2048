@@ -32,12 +32,11 @@ int main(int argc, char const *argv[])
     if ( (plate = loadGame(taille)) == NULL)
     {
         plate = newGrid(taille);
+        plate->bestScore = loadBestScore(taille);
         if (affichage == 1)
             consoleGameLoop(plate, 1);
         else
             graphiqueGameLoop(plate, 1);
-        
-        
     }
     else
     {
