@@ -13,7 +13,7 @@ SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight
 
 int * getColorRGB(int value);
 
-void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int windowHeight);
+void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont, int windowWidth, int windowHeight);
 
 int quitSDL(void);
 

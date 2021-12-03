@@ -79,9 +79,7 @@ float getFontScale(int strLen, int charWidth, int charHeight, int maxWidth, int 
 {
     float diagoFont = sqrtf(pow(strLen * charWidth, 2) + powf(charHeight, 2));
     float diagoOut = sqrtf(powf(maxWidth, 2) + powf(maxHeight, 2));
-    if (diagoFont > diagoOut)
-        return diagoOut / diagoFont;
-    return 1.0;    
+    return diagoOut / diagoFont; 
 }
 
 SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight, int maxWidth, int maxHeight)
@@ -89,7 +87,7 @@ SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight
     SDL_Color couleurNoire = {0, 0, 0};
     SDL_Surface * finalSurface;
 
-    float zoom = getFontScale(strlen(str), charWidth, charHeight, 0.8 * maxWidth, 0.8 * maxHeight);
+    float zoom = getFontScale(strlen(str), charWidth, charHeight, maxWidth, maxHeight);
     
     SDL_Surface * texte = TTF_RenderText_Blended(font, str, couleurNoire);
     
@@ -125,7 +123,16 @@ int * getColorRGB(int value)
     return RGB;
 }
 
-void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int windowHeight)
+int getPoxer2(int valeur)
+{
+    int power = 1;
+    int test = 2;
+    while ( (test *= 2) <= valeur)
+        power++;
+    return power;
+}
+
+void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont, int windowWidth, int windowHeight)
 {
     float a =0.1;
     int intervale = (9* windowWidth/100)/(a * plate->sizeTab + plate->sizeTab + a);
@@ -135,7 +142,7 @@ void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int window
     SDL_Rect posgrid, posImage, posTxt;
     
     int charWidth, charHeight;
-    TTF_Font * police = TTF_OpenFont("Monospace.ttf", 300);
+    TTF_Font * police = TTF_OpenFont("./roboto-mono/RobotoMono-Medium.ttf", 150);
     TTF_SizeText(police, "0", &charWidth, &charHeight);
 
     SDL_Surface * grid = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeGrid, sizeGrid, 32, 0, 0, 0, 0);
@@ -171,13 +178,17 @@ void displayGrid(SDL_Surface * ecran, grille* plate, int windowWidth, int window
             {
                 char renderText[20] = "";
                 sprintf(renderText, "%d", plate->tab[i][j]);
-                SDL_Surface * texte = getFont(police, renderText, charWidth, charHeight, sizeImage, sizeImage);
+                
+                int powerTile = getPoxer2(plate->tab[i][j]);
+                if (renderedFont[powerTile] == NULL)
+                    renderedFont[powerTile] = getFont(police, renderText, charWidth, charHeight, 0.8 * sizeImage, 0.8 * sizeImage);
+                
+                SDL_Surface * texte = renderedFont[powerTile];
             
                 posTxt.x = posImage.x + sizeImage/2 - texte->w/2;
                 posTxt.y = posImage.y + sizeImage/2 - texte->h/2;
                 
                 SDL_BlitSurface(texte, NULL, ecran, &posTxt);
-                SDL_FreeSurface(texte);
             }
         } 
     }

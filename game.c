@@ -222,6 +222,16 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
     free(plate);
 }
 
+
+int getMaxTheoricalTile(int gridSize)
+{
+    int maxScore = 8;
+    for (int i = 2; i < gridSize*gridSize; i++)
+        maxScore += maxScore;
+    return maxScore;
+}
+
+
 void consoleGameLoop(grille * plate, int newGame)
 {
     char c;
@@ -251,7 +261,9 @@ void consoleGameLoop(grille * plate, int newGame)
 void graphiqueGameLoop(grille * plate, int newGame)
 {
     int nbchangement = 1, mainloop = 1, event = -10;
+    int maxTheoricTile = getMaxTheoricalTile(plate->sizeTab);
     SDL_Surface * ecran = NULL;
+    SDL_Surface ** renderedFont = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
     if ((ecran = initSDL(ecran)) == NULL)
     {
         fprintf(stderr, "Impossible de lancer une interface graphique\n");
@@ -262,10 +274,10 @@ void graphiqueGameLoop(grille * plate, int newGame)
         placeRandomNumber(plate, 2);
     do
     {
-        displayGrid(ecran, plate, 800, 1000);
+        displayGrid(ecran, plate, renderedFont, 800, 1000);
         event = eventSDL();
         if (event == -1)
-            {mainloop = 0; printf("OUIOUIOUI\n");}
+            mainloop = 0;
         if (event != -10 && event != -1)
         {
             nbchangement = updateGrid(plate, event);
@@ -280,5 +292,14 @@ void graphiqueGameLoop(grille * plate, int newGame)
     printf("PERDU! \n");
 
     SDL_FreeSurface(ecran);
+    for (int i = 0; i < maxTheoricTile; i++)
+    {
+        if (renderedFont[i] != NULL)
+        {
+            SDL_FreeSurface(renderedFont[i]);
+        }
+    }
+    free(renderedFont);
+    
     quitSDL();
 }
