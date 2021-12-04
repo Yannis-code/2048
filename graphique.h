@@ -13,7 +13,13 @@ SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight
 
 int * getColorRGB(int value);
 
-void displayGrid(SDL_Surface * ecran, grille* plate, SDL_Surface ** renderedFont, int windowWidth, int windowHeight);
+font * loadFont(char * path);
+
+gameTextures * initGraphicAssets(int maxTheoricTile);
+
+void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight);
+
+void freeGameTextures(grille* plate, gameTextures * gameAsset);
 
 int quitSDL(void);
 
