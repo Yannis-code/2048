@@ -142,7 +142,7 @@ gameTextures * initGraphicAssets(int maxTheoricTile)
     return gameAsset;
 }
 
-void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight)
+void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int windowWidth, int windowHeight)
 {
     char textToDisplay[50] = "";
     //Calcul des dimension des zones d'affichage
@@ -187,9 +187,17 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
     
     sprintf(textToDisplay, "Meilleur score: %d", plate->bestScore);
     text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
-        gameAsset->font->charHeight, 0.4 * windowWidth, 0.3*windowHeight);
-    posTxt.x = windowWidth/2 - text->w/2;
-    posTxt.y = 0.15 * windowHeight;
+        gameAsset->font->charHeight, 0.3 * windowWidth, 0.2*windowHeight);
+    posTxt.x = (windowWidth - sizeGrid)/2;
+    posTxt.y = windowHeight-sizeGrid - 0.05 * windowHeight - text->h;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
+
+    sprintf(textToDisplay, "%d:%.2d:%.2d:%.2d", (int) gameTimer->days, (int) gameTimer->hours, (int) gameTimer->minutes, (int) gameTimer->secondes);
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.2 * windowWidth, 0.15*windowHeight);
+    posTxt.x = (windowWidth + sizeGrid)/2 - text->w;
+    posTxt.y = windowHeight-sizeGrid - 0.05 * windowHeight - text->h;
     SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
     SDL_FreeSurface(text);
     
@@ -211,12 +219,12 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
                 sprintf(textToDisplay, "%s", "");
                 sprintf(textToDisplay, "%d", plate->tab[i][j]);
                 
-                int powerTile = getPoxer2(plate->tab[i][j]);
-                if (gameAsset->tilesRendered[powerTile] == NULL)
-                    gameAsset->tilesRendered[powerTile] = getFont(gameAsset->font->font, textToDisplay,
+                int indice = getPoxer2(plate->tab[i][j])-1;
+                if (gameAsset->tilesRendered[indice] == NULL)
+                    gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
                     gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage);
                 
-                SDL_Surface * texte = gameAsset->tilesRendered[powerTile];
+                SDL_Surface * texte = gameAsset->tilesRendered[indice];
             
                 posTxt.x = gameAsset->tile->box.x + sizeImage/2 - texte->w/2;
                 posTxt.y = gameAsset->tile->box.y + sizeImage/2 - texte->h/2;
@@ -244,8 +252,8 @@ void freeGameTextures(grille* plate, gameTextures * gameAsset)
 
     if (gameAsset->tile->surface != NULL)
         SDL_FreeSurface(gameAsset->tile->surface);
-    free(gameAsset->grid);
+    free(gameAsset->tile);
     SDL_FreeSurface(gameAsset->ecran);
     TTF_Quit();
-    //SDL_Quit();
+    SDL_Quit();
 }

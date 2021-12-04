@@ -29,6 +29,15 @@ typedef struct _rect
     SDL_Rect box;
 } rect;
 
+typedef struct _timer
+{
+    double start_;
+    float days;
+    float hours;
+    float minutes;
+    float secondes;
+} timer;
+
 typedef struct _gameTextures
 {
     SDL_Surface * ecran;
@@ -36,6 +45,7 @@ typedef struct _gameTextures
     font * font;
     rect * grid;
     rect * tile;
+    timer * gameTimer;
 } gameTextures;
 
 #endif

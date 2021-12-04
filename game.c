@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <bits/time.h>
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
@@ -120,7 +123,7 @@ int updateGrid(grille * plate, int direction)
 void saveGame(grille * plate)
 {
     char path[30];
-    sprintf(path, "./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+    sprintf(path, "./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
     
     FILE * file = fopen(path, "w+");
     if (file == NULL)
@@ -138,35 +141,22 @@ void saveGame(grille * plate)
         fprintf(file, "\n");
     }
     fclose(file);
-
-    int bestScore;
-    char path2[100];
-    sprintf(path2, "./games/bestScore_%dx%d.txt", plate->sizeTab, plate->sizeTab);
-    FILE * file2 = fopen(path2, "r");
-    if (file2 == NULL)
+    
+    sprintf(path, "./games/%dx%d/bestScore", plate->sizeTab, plate->sizeTab);
+    file = fopen(path, "w+");
+    if (file == NULL)
     {
-        file2 = fopen(path2, "w+");
-        if (file2 == NULL)
-        {
-            fprintf(stderr, "Impossible de sauvegarder le score\n");
-            return;
-        }
-        bestScore = -1;
+        fprintf(stderr, "Impossible de sauvegarder le score\n");
+        return;
     }
-    fscanf(file2, "%d", &bestScore);
-    if (plate->score > bestScore)
-    {
-        fclose(file2);
-        FILE * file2 = fopen(path2, "w+");
-        fprintf(file2, "%d", plate->score);
-    }
-    fclose(file2);
+    fprintf(file, "%d", plate->bestScore);
+    fclose(file);
 }
 
 grille * loadGame(int taille)
 {
     char path[30];
-    sprintf(path, "./games/save_%dx%d.txt", taille, taille);
+    sprintf(path, "./games/%dx%d/save", taille, taille);
     FILE * file = fopen(path, "r");
     if (file == NULL)
     {
@@ -197,16 +187,16 @@ grille * loadGame(int taille)
 int loadBestScore(int taille)
 {
     int bestScore;
-    char path2[100];
-    sprintf(path2, "./games/bestScore_%dx%d.txt", taille, taille);
-    FILE * file2 = fopen(path2, "r");
-    if (file2 == NULL)
+    char path[100];
+    sprintf(path, "./games/%dx%d/bestScore", taille, taille);
+    FILE * file = fopen(path, "r");
+    if (file == NULL)
     {
         return 0;
     }
-    fscanf(file2, "%d", &bestScore);
+    fscanf(file, "%d", &bestScore);
     return bestScore;
-    fclose(file2);
+    fclose(file);
 }
 
 grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
@@ -262,6 +252,16 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
     free(plate);
 }
 
+clock_t updateTimer(timer * gameTimer)
+{
+    clock_t timer = (clock() - gameTimer->start_)/CLOCKS_PER_SEC;
+    gameTimer->days = timer/86400;
+    gameTimer->hours = timer/3600 - gameTimer->days*24;
+    gameTimer->minutes = timer/60 - gameTimer->hours*60 - gameTimer->days*1440;
+    gameTimer->secondes = timer - gameTimer->minutes*60 - gameTimer->hours*3600 - gameTimer->days*86400;
+    return timer;
+}
+
 void consoleGameLoop(grille * plate, int newGame)
 {
     char c;
@@ -282,10 +282,13 @@ void consoleGameLoop(grille * plate, int newGame)
             placeRandomNumber(plate, 1);
         saveGame(plate);
     } while (!(gameOver(plate)));
-    char deleteFile[40];
-    sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
-    system(deleteFile);
-    printf("PERDU! \n");
+    if (gameOver(plate))
+    {
+        char deleteFile[40];
+        sprintf(deleteFile, "rm -f ./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
+        system(deleteFile);
+        printf("PERDU! \n");
+    }
 }
 
 void graphiqueGameLoop(grille * plate, int newGame)
@@ -293,6 +296,8 @@ void graphiqueGameLoop(grille * plate, int newGame)
     int nbchangement = 1, mainloop = 1, event = -10;
     int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;  
     gameTextures * gameAsset = initGraphicAssets(maxTheoricTile);
+    timer * gameTimer = (timer *) malloc(sizeof(timer));
+    gameTimer->start_ = clock();
     if ((gameAsset->ecran = initSDL(gameAsset->ecran)) == NULL)
     {
         fprintf(stderr, "Impossible de lancer une interface graphique\n");
@@ -303,7 +308,8 @@ void graphiqueGameLoop(grille * plate, int newGame)
         placeRandomNumber(plate, 2);
     do
     {
-        displayGrid(plate, gameAsset, 800, 1000);
+        updateTimer(gameTimer);
+        displayGrid(plate, gameAsset, gameTimer, 800, 1000);
         event = eventSDL();
         if (event == -1)
             mainloop = 0;
@@ -312,18 +318,19 @@ void graphiqueGameLoop(grille * plate, int newGame)
             nbchangement = updateGrid(plate, event);
             if (checkFreeSpace(plate) && nbchangement)
                 placeRandomNumber(plate, 1);
-            saveGame(plate);
         }
         if (plate->score >= plate->bestScore)
             plate->bestScore = plate->score;
         
     } while (mainloop);
+    freeGameTextures(plate, gameAsset);
+    free(gameTimer);
+    saveGame(plate);
     if (gameOver(plate))
     {
         char deleteFile[40];
-        sprintf(deleteFile, "rm -f ./games/save_%dx%d.txt", plate->sizeTab, plate->sizeTab);
+        sprintf(deleteFile, "rm -f ./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
         system(deleteFile);
         printf("PERDU! \n");
-    }    
-    freeGameTextures(plate, gameAsset);
+    }
 }
