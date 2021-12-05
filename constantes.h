@@ -7,13 +7,15 @@
 #define DEBUG fprintf(stderr, "[DEBUG]: File: %s, Func: %s, Line: %d\n", __FILE__, __func__, __LINE__);
 
 enum{HAUT, BAS, GAUCHE, DROITE};
+enum{IN_GAME, GAME_OVER};
 
 typedef struct _grille
 {
     int ** tab;
     int score;
     int bestScore;
-    int sizeTab;
+    short sizeTab;
+    short status;
 } grille;
 
 typedef struct _font

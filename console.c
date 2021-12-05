@@ -37,15 +37,32 @@ int getMaxNumber(grille * plate) // Renvoie le plus grand nombre contenu dans le
     return max;
 }
 
+void printSeparator(int size)
+{
+    printf("======================");
+    for (int i = 0; i < size; i++)
+        printf("=");
+    printf("\n");
+}
+
 void printGame(grille * plate) // Affiche un tableau 2D
 {
     int max = getMaxNumber(plate);
-    printf("SCORE: %d\n", plate->score);
+    int size = getSizeOfNumber(plate->bestScore) + getSizeOfNumber(plate->score);
+    system("clear");
+    printSeparator(size);
+    printf("       [d]    -> Droite\n   [q] ou [g] -> Gauche\n   [z] ou [h] -> Haut\n   [s] ou [b] -> Bas\n    [ESPACE]  -> Quitter\n    [ENTRER]  -> Valider\n");
+    printSeparator(size);
+    printf(" SCORE: %d | Meilleur: %d\n", plate->score, plate->bestScore);
+    printSeparator(size);
     for (int i = 0; i < plate->sizeTab; i++)
     {
         for (int j = 0; j < plate->sizeTab; j++)
+        {
+            if (j == 0) printf("> ");
             printf("| %*d ", getSizeOfNumber(max), plate->tab[i][j]);
+        }
         printf("|\n");
     }
-    printf("\n");
+    printSeparator(size);
 }

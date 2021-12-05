@@ -207,6 +207,7 @@ grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension
 
     plate->sizeTab = size;
     plate->score = 0;
+    plate->status = IN_GAME;
 
     plate->tab = (int **) malloc(plate->sizeTab * sizeof(int*));
     if (plate->tab == NULL)
@@ -264,31 +265,47 @@ clock_t updateTimer(timer * gameTimer)
 
 void consoleGameLoop(grille * plate, int newGame)
 {
-    char c;
-    int direction, nbchangement = 1;
+    char c = '\0';
+    int direction, nbchangement = 0, mainloop = 1;
     if (newGame)
         placeRandomNumber(plate, 2);
     do
     {
         printGame(plate);
-        vider_buffer();
-        scanf("%c", &c);
+        c = '\0';
+        if (!gameOver(plate))
+            while (!(c == 'z' || c == 'Z' || c == 'h' || c == 'H' || c == 'q' || c == 'Q' || c == 'g' || c == 'G'
+                || c == 's' || c == 'S' || c == 'b' || c == 'B' || c == 'd' || c == 'D' || c == ' '))
+            {
+                printf("> ");
+                scanf("%c", &c);
+                vider_buffer();
+            }
         if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
         else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
         else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
         else if (c == 'd' || c == 'D') {direction = DROITE;}
-        nbchangement = updateGrid(plate, direction);
+        else if (c == ' ') mainloop = 0;
+        if (gameOver(plate))
+            mainloop = 0;
+        if (mainloop)
+            nbchangement = updateGrid(plate, direction);
         if (checkFreeSpace(plate) && nbchangement)
             placeRandomNumber(plate, 1);
-        saveGame(plate);
-    } while (!(gameOver(plate)));
+    } while (mainloop);
     if (gameOver(plate))
     {
-        char deleteFile[40];
-        sprintf(deleteFile, "rm -f ./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
+        char deleteFile[50];
+        sprintf(deleteFile, "rm -f ./games/%dx%d/save;", plate->sizeTab, plate->sizeTab);
         system(deleteFile);
-        printf("PERDU! \n");
+        printf("\n=== PERDU ===\n");
+        printf("[ENTRER] pour quitter\n");
+        printf(">");
+        scanf("%c", &c);
     }
+    else
+        saveGame(plate);
+    system("clear");
 }
 
 void graphiqueGameLoop(grille * plate, int newGame)
@@ -308,7 +325,8 @@ void graphiqueGameLoop(grille * plate, int newGame)
         placeRandomNumber(plate, 2);
     do
     {
-        updateTimer(gameTimer);
+        if (!gameOver(plate))
+            updateTimer(gameTimer);
         displayGrid(plate, gameAsset, gameTimer, 800, 1000);
         event = eventSDL();
         if (event == -1)
@@ -319,6 +337,9 @@ void graphiqueGameLoop(grille * plate, int newGame)
             if (checkFreeSpace(plate) && nbchangement)
                 placeRandomNumber(plate, 1);
         }
+        if (gameOver(plate))
+            plate->status = GAME_OVER;
+        
         if (plate->score >= plate->bestScore)
             plate->bestScore = plate->score;
         

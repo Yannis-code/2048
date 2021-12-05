@@ -9,7 +9,7 @@ int eventSDL(void);
 
 float getFontScale(int strLen, int charWidth, int charHeight, int maxWidth, int maxHeight);
 
-SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight, int maxWidth, int maxHeight);
+SDL_Surface * getFont(TTF_Font * font, char * str, int charWidth, int charHeight, int maxWidth, int maxHeight, int colorR, int colorG, int colorB);
 
 int * getColorRGB(int value);
 
