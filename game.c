@@ -253,7 +253,6 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
         }
         if (plate->gameTimer != NULL)
             free(plate->gameTimer);
-        
         free(plate->tab);
         free(plate);
     }
@@ -382,11 +381,8 @@ void graphiqueGameLoop(grille * plate, int newGame)
             copyGrid(plate, prevMove);
             canRewind = 0;
         }
-        if (event == MENU)
-        {
-            menuloop = 1;
-            menuSelect = 0;
-        }
+        
+        if (event == MENU){menuloop = 1; menuSelect = 0;}
         while (menuloop)
         {
             displayMenu(gameAsset, menuSelect);
@@ -419,6 +415,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
                     plate->bestScore = bestScore;
                     plate->gameTimer->timeElapsed = 0;
                     plate->gameTimer->start_ = clock();
+                    canRewind = 0;
                     menuloop = 0;
                 }
                 else if (menuSelect == 2)
@@ -429,7 +426,6 @@ void graphiqueGameLoop(grille * plate, int newGame)
             }
             
         }
-        
         if (gameOver(plate))
             plate->status = GAME_OVER;
         
@@ -438,11 +434,6 @@ void graphiqueGameLoop(grille * plate, int newGame)
         
     } while (mainloop);
     freeGameTextures(plate, gameAsset);
-    free(plate->gameTimer);
     free(prevMove->gameTimer);
     saveGame(plate);
-    if (gameOver(plate))
-    {
-        printf("PERDU! \n");
-    }
 }
