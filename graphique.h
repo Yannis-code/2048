@@ -17,7 +17,7 @@ font * loadFont(char * path);
 
 gameTextures * initGraphicAssets(int maxTheoricTile);
 
-void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int windowWidth, int windowHeight);
+void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight);
 
 void freeGameTextures(grille* plate, gameTextures * gameAsset);
 

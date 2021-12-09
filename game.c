@@ -133,7 +133,7 @@ void saveGame(grille * plate)
     }
     if (plate->status == IN_GAME)
     {
-        fprintf(file, "%d %d %d\n", plate->status, plate->score, plate->bestScore);
+        fprintf(file, "%d %d %d %lf\n", plate->status, plate->score, plate->bestScore, plate->gameTimer->timeElapsed);
         for (int i = 0; i < plate->sizeTab; i++)
         {
             for (int j = 0; j < plate->sizeTab; j++)
@@ -175,7 +175,7 @@ grille * loadGame(int taille)
     fscanf(file, "%hd ", &plate->status);
     if (plate->status == IN_GAME)
     {
-        fscanf(file, "%d %d\n", &plate->score, &plate->bestScore);
+        fscanf(file, "%d %d %lf\n", &plate->score, &plate->bestScore, &plate->gameTimer->loadedTime);
         for (int i = 0; i < plate->sizeTab; i++)
         {
             for (int j = 0; j < plate->sizeTab; j++)
@@ -203,6 +203,8 @@ grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension
     plate->sizeTab = size;
     plate->score = 0;
     plate->status = IN_GAME;
+
+    plate->gameTimer = (timer *) malloc(sizeof(timer));
 
     plate->tab = (int **) malloc(plate->sizeTab * sizeof(int*));
     if (plate->tab == NULL)
@@ -250,11 +252,12 @@ void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
 
 clock_t updateTimer(timer * gameTimer)
 {
-    clock_t timer = (clock() - gameTimer->start_)/CLOCKS_PER_SEC;
+    clock_t timer = (clock() - gameTimer->start_)/CLOCKS_PER_SEC + gameTimer->loadedTime;
     gameTimer->days = timer/86400;
     gameTimer->hours = timer/3600 - gameTimer->days*24;
     gameTimer->minutes = timer/60 - gameTimer->hours*60 - gameTimer->days*1440;
     gameTimer->secondes = timer - gameTimer->minutes*60 - gameTimer->hours*3600 - gameTimer->days*86400;
+    gameTimer->timeElapsed = timer;
     return timer;
 }
 
@@ -311,8 +314,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
     int nbchangement = 1, mainloop = 1, event = -10;
     int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;  
     gameTextures * gameAsset = initGraphicAssets(maxTheoricTile);
-    timer * gameTimer = (timer *) malloc(sizeof(timer));
-    gameTimer->start_ = clock();
+    plate->gameTimer->start_ = clock();
     if ((gameAsset->ecran = initSDL(gameAsset->ecran)) == NULL)
     {
         fprintf(stderr, "Impossible de lancer une interface graphique\n");
@@ -327,8 +329,8 @@ void graphiqueGameLoop(grille * plate, int newGame)
     do
     {
         if (!gameOver(plate))
-            updateTimer(gameTimer);
-        displayGrid(plate, gameAsset, gameTimer, 800, 1000);
+            updateTimer(plate->gameTimer);
+        displayGrid(plate, gameAsset, 800, 1000);
         event = eventSDL();
         if (event == -1)
             mainloop = 0;
@@ -346,7 +348,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
         
     } while (mainloop);
     freeGameTextures(plate, gameAsset);
-    free(gameTimer);
+    free(plate->gameTimer);
     saveGame(plate);
     if (gameOver(plate))
     {
