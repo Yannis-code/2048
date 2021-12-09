@@ -9,6 +9,17 @@
 enum{HAUT, BAS, GAUCHE, DROITE};
 enum{IN_GAME, GAME_OVER};
 
+typedef struct _timer
+{
+    double loadedTime;
+    double timeElapsed;
+    double start_;
+    float days;
+    float hours;
+    float minutes;
+    float secondes;
+} timer;
+
 typedef struct _grille
 {
     int ** tab;
@@ -16,6 +27,7 @@ typedef struct _grille
     int bestScore;
     short sizeTab;
     short status;
+    timer * gameTimer;
 } grille;
 
 typedef struct _font
@@ -31,15 +43,6 @@ typedef struct _rect
     SDL_Rect box;
 } rect;
 
-typedef struct _timer
-{
-    double start_;
-    float days;
-    float hours;
-    float minutes;
-    float secondes;
-} timer;
-
 typedef struct _gameTextures
 {
     SDL_Surface * ecran;
@@ -47,7 +50,6 @@ typedef struct _gameTextures
     font * font;
     rect * grid;
     rect * tile;
-    timer * gameTimer;
 } gameTextures;
 
 #endif

@@ -142,7 +142,7 @@ gameTextures * initGraphicAssets(int maxTheoricTile)
     return gameAsset;
 }
 
-void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int windowWidth, int windowHeight)
+void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight)
 {
     char textToDisplay[50] = "";
     //Calcul des dimension des zones d'affichage
@@ -192,7 +192,7 @@ void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int
     SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
     SDL_FreeSurface(text);
 
-    sprintf(textToDisplay, "%d:%.2d:%.2d:%.2d", (int) gameTimer->days, (int) gameTimer->hours, (int) gameTimer->minutes, (int) gameTimer->secondes);
+    sprintf(textToDisplay, "%d:%.2d:%.2d:%.2d", (int) plate->gameTimer->days, (int) plate->gameTimer->hours, (int) plate->gameTimer->minutes, (int) plate->gameTimer->secondes);
     text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
         gameAsset->font->charHeight, 0.2 * windowWidth, 0.15*windowHeight, 0, 0, 0);
     posTxt.x = (windowWidth + sizeGrid)/2 - text->w;
