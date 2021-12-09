@@ -123,7 +123,7 @@ int updateGrid(grille * plate, int direction)
 void saveGame(grille * plate)
 {
     char path[30];
-    sprintf(path, "./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
+    sprintf(path, "./games/%dx%d_save", plate->sizeTab, plate->sizeTab);
     
     FILE * file = fopen(path, "w+");
     if (file == NULL)
@@ -131,72 +131,67 @@ void saveGame(grille * plate)
         fprintf(stderr, "Impossible de sauvegarder la partie\n");
         return;
     }
-    fprintf(file, "%d\n", plate->score);
-    for (int i = 0; i < plate->sizeTab; i++)
+    if (plate->status == IN_GAME)
     {
-        for (int j = 0; j < plate->sizeTab; j++)
+        fprintf(file, "%d %d %d\n", plate->status, plate->score, plate->bestScore);
+        for (int i = 0; i < plate->sizeTab; i++)
         {
-            fprintf(file, "%d ", plate->tab[i][j]);
+            for (int j = 0; j < plate->sizeTab; j++)
+            {
+                fprintf(file, "%d ", plate->tab[i][j]);
+            }
+            fprintf(file, "\n");
         }
-        fprintf(file, "\n");
     }
-    fclose(file);
-    
-    sprintf(path, "./games/%dx%d/bestScore", plate->sizeTab, plate->sizeTab);
-    file = fopen(path, "w+");
-    if (file == NULL)
+    else
     {
-        fprintf(stderr, "Impossible de sauvegarder le score\n");
-        return;
+        fprintf(file, "%d %d\n", plate->status, plate->score);
     }
-    fprintf(file, "%d", plate->bestScore);
+    
     fclose(file);
 }
 
 grille * loadGame(int taille)
 {
     char path[30];
-    sprintf(path, "./games/%dx%d/save", taille, taille);
-    FILE * file = fopen(path, "r");
-    if (file == NULL)
-    {
-        fprintf(stderr, "Aucune sauvegarde disponible\n");
-        return NULL;
-    }
+    sprintf(path, "./games/%dx%d_save", taille, taille);
     
     grille * plate = newGrid(taille);
     if (plate == NULL)
     {
-        fclose(file);
         return NULL;
     }
-    fscanf(file, "%d\n", &plate->score);
-    for (int i = 0; i < plate->sizeTab; i++)
-    {
-        for (int j = 0; j < plate->sizeTab; j++)
-        {
-            fscanf(file, "%d ", &plate->tab[i][j]);
-        }
-        fscanf(file, "\n");
-    }
-    fclose(file);
-    plate->bestScore = loadBestScore(taille);
-    return plate;
-}
 
-int loadBestScore(int taille)
-{
-    int bestScore;
-    char path[100];
-    sprintf(path, "./games/%dx%d/bestScore", taille, taille);
     FILE * file = fopen(path, "r");
     if (file == NULL)
     {
-        return 0;
+        fprintf(stderr, "Aucune sauvegarde disponible\n");
+        plate->status = GAME_OVER;
+        plate->bestScore = 0;
+        plate->score = 0;
+        return plate;
     }
-    fscanf(file, "%d", &bestScore);
-    return bestScore;
+
+    fscanf(file, "%hd ", &plate->status);
+    if (plate->status == IN_GAME)
+    {
+        fscanf(file, "%d %d\n", &plate->score, &plate->bestScore);
+        for (int i = 0; i < plate->sizeTab; i++)
+        {
+            for (int j = 0; j < plate->sizeTab; j++)
+            {
+                fscanf(file, "%d ", &plate->tab[i][j]);
+            }
+            fscanf(file, "\n");
+        }
+    }
+    else
+    {
+        fscanf(file, "%d\n", &plate->bestScore);
+    }
+    
     fclose(file);
+    return plate;
 }
 
 grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
@@ -267,8 +262,11 @@ void consoleGameLoop(grille * plate, int newGame)
 {
     char c = '\0';
     int direction, nbchangement = 0, mainloop = 1;
-    if (newGame)
+    if (newGame == GAME_OVER)
+    {
         placeRandomNumber(plate, 2);
+        plate->status = IN_GAME;
+    }
     do
     {
         printGame(plate);
@@ -321,8 +319,11 @@ void graphiqueGameLoop(grille * plate, int newGame)
         exit(EXIT_FAILURE);
     }
 
-    if (newGame)
+    if (newGame == GAME_OVER)
+    {
         placeRandomNumber(plate, 2);
+        plate->status = IN_GAME;
+    }
     do
     {
         if (!gameOver(plate))
@@ -349,9 +350,6 @@ void graphiqueGameLoop(grille * plate, int newGame)
     saveGame(plate);
     if (gameOver(plate))
     {
-        char deleteFile[40];
-        sprintf(deleteFile, "rm -f ./games/%dx%d/save", plate->sizeTab, plate->sizeTab);
-        system(deleteFile);
         printf("PERDU! \n");
     }
 }
