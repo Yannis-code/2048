@@ -20,6 +20,7 @@ SDL_Surface * initSDL(SDL_Surface * ecran)
         return NULL; // On retourne erreur
     }
 
+    SDL_WM_SetIcon(SDL_LoadBMP("./img/logo.bmp"), NULL);
     SDL_WM_SetCaption("2048", NULL);
 
     if ((ecran = SDL_SetVideoMode(800, 1000, 32, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) // Démarrage de la SDL. Si erreur :
@@ -123,22 +124,21 @@ int * getColorRGB(int value)
     return RGB;
 }
 
-int getPoxer2(int valeur)
-{
-    int power = 1;
-    int test = 2;
-    while ( (test *= 2) <= valeur)
-        power++;
-    return power;
-}
-
 gameTextures * initGraphicAssets(int maxTheoricTile)
 {
     gameTextures * gameAsset = (gameTextures *) malloc(sizeof(gameTextures));
     gameAsset->grid = (rect *) malloc(sizeof(rect));
+    gameAsset->grid->surface = NULL;
     gameAsset->tile = (rect *) malloc(sizeof(rect));
+    gameAsset->tile->surface = NULL;
     gameAsset->font = (font *) malloc(sizeof(font));
+    gameAsset->font->font = NULL;
     gameAsset->tilesRendered = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
+    for (int i = 0; i < maxTheoricTile; i++)
+    {
+        gameAsset->tilesRendered[i] = NULL;
+    }
+    
     return gameAsset;
 }
 
@@ -167,7 +167,7 @@ void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int
     {
         gameAsset->tile->surface = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeImage, sizeImage, 32, 0, 0, 0, 0);
     }
-    
+
     // Initialisation de la police si elle n'existe pas déjà
     if (gameAsset->font->font == NULL)
     {
@@ -219,13 +219,13 @@ void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int
                 sprintf(textToDisplay, "%s", "");
                 sprintf(textToDisplay, "%d", plate->tab[i][j]);
                 
-                int indice = getPoxer2(plate->tab[i][j])-1;
+                int indice = (int) log2(plate->tab[i][j]);
                 if (gameAsset->tilesRendered[indice] == NULL)
                     gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
                     gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage, 0, 0, 0);
                 
                 SDL_Surface * texte = gameAsset->tilesRendered[indice];
-            
+
                 posTxt.x = gameAsset->tile->box.x + sizeImage/2 - texte->w/2;
                 posTxt.y = gameAsset->tile->box.y + sizeImage/2 - texte->h/2;
                 
@@ -241,6 +241,7 @@ void displayGrid(grille* plate, gameTextures * gameAsset, timer * gameTimer, int
         SDL_SetAlpha(gameOver, SDL_SRCALPHA | SDL_RLEACCEL, 100);
 
         SDL_BlitSurface(gameOver, NULL, gameAsset->ecran, &gameAsset->grid->box);
+        SDL_FreeSurface(gameOver);
 
         sprintf(textToDisplay, "PERDU");
         text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,

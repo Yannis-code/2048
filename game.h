@@ -15,8 +15,6 @@ int updateGrid(grille * plate, int direction);
 
 void saveGame(grille * plate);
 
-int loadBestScore(int taille);
-
 grille * loadGame(int taille);
 
 grille * newGrid(int size);

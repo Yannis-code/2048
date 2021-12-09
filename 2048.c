@@ -29,21 +29,12 @@ int main(int argc, char const *argv[])
     (affichage != 1 && affichage != 2) || taille < 2 || taille > 8)
         menu(&affichage, &taille);
     
-    if ( (plate = loadGame(taille)) == NULL)
-    {
-        plate = newGrid(taille);
-        plate->bestScore = loadBestScore(taille);
-        if (affichage == 1)
-            consoleGameLoop(plate, 1);
-        else
-            graphiqueGameLoop(plate, 1);
-    }
-    else
+    if ( (plate = loadGame(taille)) != NULL)
     {
         if (affichage == 1)
-            consoleGameLoop(plate, 0);
+            consoleGameLoop(plate, plate->status);
         else
-            graphiqueGameLoop(plate, 0);
+            graphiqueGameLoop(plate, plate->status);
     }
 
     freeGrid(plate);
