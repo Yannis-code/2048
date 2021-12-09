@@ -23,7 +23,7 @@ SDL_Surface * initSDL(SDL_Surface * ecran)
     SDL_WM_SetIcon(SDL_LoadBMP("./img/logo.bmp"), NULL);
     SDL_WM_SetCaption("2048", NULL);
 
-    if ((ecran = SDL_SetVideoMode(800, 1000, 32, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) // Démarrage de la SDL. Si erreur :
+    if ((ecran = SDL_SetVideoMode(WIN_WIDTH, WIN_HEIGHT, 32, SDL_HWSURFACE | SDL_DOUBLEBUF)) == NULL) // Démarrage de la SDL. Si erreur :
     {
         fprintf(stderr, "Erreur d'initialisation de la fenetre : %s\n", SDL_GetError()); // Écriture de l'erreur
         return NULL; // On retourne erreur
@@ -45,13 +45,13 @@ int eventSDL(void)
     switch(event.type)
     {
         case SDL_QUIT:
-            return -1;
+            return EXIT;
             break;
         case SDL_KEYDOWN:
             switch(event.key.keysym.sym)
             {
                 case SDLK_ESCAPE: // Veut arrêter le jeu
-                    return -1;
+                    return MENU;
                     break;
                 case SDLK_UP: // Demande à jouer
                     return HAUT;
@@ -64,6 +64,15 @@ int eventSDL(void)
                     break;
                 case SDLK_LEFT: // Demande à jouer
                     return GAUCHE;
+                    break;
+                case SDLK_BACKSPACE: // Demande à jouer
+                    return UNDO;
+                    break;
+                case SDLK_m: // Demande à jouer
+                    return MENU;
+                    break;
+                case SDLK_RETURN: // Demande à jouer
+                    return VALIDE;
                     break;
                 default: // Demande l'éditeur de niveaux
                     return -10;
@@ -131,6 +140,10 @@ gameTextures * initGraphicAssets(int maxTheoricTile)
     gameAsset->grid->surface = NULL;
     gameAsset->tile = (rect *) malloc(sizeof(rect));
     gameAsset->tile->surface = NULL;
+    gameAsset->menu = (rect *) malloc(sizeof(rect));
+    gameAsset->menu->surface = NULL;
+    gameAsset->undo = (rect *) malloc(sizeof(rect));
+    gameAsset->undo->surface = NULL;
     gameAsset->font = (font *) malloc(sizeof(font));
     gameAsset->font->font = NULL;
     gameAsset->tilesRendered = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
@@ -142,12 +155,12 @@ gameTextures * initGraphicAssets(int maxTheoricTile)
     return gameAsset;
 }
 
-void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int windowHeight)
+void displayGrid(grille* plate, gameTextures * gameAsset)
 {
     char textToDisplay[50] = "";
     //Calcul des dimension des zones d'affichage
     float a =0.1;
-    int intervale = (9* windowWidth/100)/(a * plate->sizeTab + plate->sizeTab + a);
+    int intervale = (9* WIN_WIDTH/100)/(a * plate->sizeTab + plate->sizeTab + a);
     int sizeImage = intervale * 10;
     int sizeGrid = sizeImage * (a*plate->sizeTab+plate->sizeTab+a);
 
@@ -155,12 +168,34 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
     
     SDL_Rect posTxt;
 
+    // Initialisation de l'affichage de la touche echap
+    if (gameAsset->menu->surface == NULL)
+    {
+        SDL_Surface * load_escape = IMG_Load("./img/escape.png");
+        gameAsset->menu->surface = rotozoomSurface(load_escape, 0, (0.05*WIN_HEIGHT)/load_escape->h, 1);
+        SDL_FreeSurface(load_escape);
+        gameAsset->menu->box.x = 0.01*WIN_WIDTH;
+        gameAsset->menu->box.y = 0.01*WIN_WIDTH;
+    }
+    SDL_BlitSurface(gameAsset->menu->surface, NULL, gameAsset->ecran, &gameAsset->menu->box);
+
+    // Initialisation de l'affichage de la touche return
+    if (gameAsset->undo->surface == NULL)
+    {
+        SDL_Surface * load_undo = IMG_Load("./img/return.png");
+        gameAsset->undo->surface = rotozoomSurface(load_undo, 0, (0.05*WIN_HEIGHT)/load_undo->h, 1);
+        SDL_FreeSurface(load_undo);
+        gameAsset->undo->box.x = 0.99*WIN_WIDTH - gameAsset->undo->surface->w;
+        gameAsset->undo->box.y = 0.01*WIN_WIDTH;
+    }
+    SDL_BlitSurface(gameAsset->undo->surface, NULL, gameAsset->ecran, &gameAsset->undo->box);
+    
     // Initialisation de la grille si elle n'existe pas déjà
     if (gameAsset->grid->surface == NULL)
     {
         gameAsset->grid->surface = SDL_CreateRGBSurface(SDL_HWSURFACE, sizeGrid, sizeGrid, 32, 0, 0, 0, 0);
-        gameAsset->grid->box.x = (windowWidth - sizeGrid)/2;
-        gameAsset->grid->box.y = windowHeight-sizeGrid - 0.05 * windowHeight;
+        gameAsset->grid->box.x = (WIN_WIDTH - sizeGrid)/2;
+        gameAsset->grid->box.y = WIN_HEIGHT-sizeGrid - 0.05 * WIN_HEIGHT;
     }
     // Initialisation de la case si elle n'existe pas déjà
     if (gameAsset->tile->surface == NULL)
@@ -171,32 +206,47 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
     // Initialisation de la police si elle n'existe pas déjà
     if (gameAsset->font->font == NULL)
     {
-        gameAsset->font->font = TTF_OpenFont("./roboto-mono/RobotoMono-Medium.ttf", 150);
+        gameAsset->font->font = TTF_OpenFont(FONT_PATH, FONT_SIZE_LOAD);
         TTF_SizeText(gameAsset->font->font, "0", &(gameAsset->font->charWidth), &(gameAsset->font->charHeight));
     }
     
+    sprintf(textToDisplay, "Menu");
+    SDL_Surface * text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, gameAsset->menu->surface->w, gameAsset->menu->surface->h, 0, 0, 0);
+    posTxt.x = gameAsset->menu->box.x + gameAsset->menu->surface->w + 0.01*WIN_WIDTH;
+    posTxt.y = gameAsset->menu->box.y + (gameAsset->menu->surface->h - text->h)/2;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
+
+    sprintf(textToDisplay, "Annuler");
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, gameAsset->undo->surface->w, gameAsset->undo->surface->h, 0, 0, 0);
+    posTxt.x = gameAsset->undo->box.x - gameAsset->undo->surface->w - 0.01*WIN_WIDTH;
+    posTxt.y = gameAsset->undo->box.y + (gameAsset->undo->surface->h - text->h)/2;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
 
     sprintf(textToDisplay, "Score: %d", plate->score);
-    SDL_Surface * text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
-        gameAsset->font->charHeight, 0.4 * windowWidth, 0.3*windowHeight, 0, 0, 0);
-    posTxt.x = windowWidth/2 - text->w/2;
-    posTxt.y = 0.05 * windowHeight;
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, 0, 0, 0);
+    posTxt.x = WIN_WIDTH/2 - text->w/2;
+    posTxt.y = gameAsset->grid->box.y - gameAsset->grid->box.y/2 - text->h;
     SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
     SDL_FreeSurface(text);
     
     sprintf(textToDisplay, "Meilleur score: %d", plate->bestScore);
     text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
-        gameAsset->font->charHeight, 0.3 * windowWidth, 0.2*windowHeight, 0, 0, 0);
-    posTxt.x = (windowWidth - sizeGrid)/2;
-    posTxt.y = windowHeight-sizeGrid - 0.05 * windowHeight - text->h;
+        gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, 100, 100, 100);
+    posTxt.x = WIN_WIDTH/2 - text->w/2;
+    posTxt.y = gameAsset->grid->box.y - gameAsset->grid->box.y/2;
     SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
     SDL_FreeSurface(text);
 
-    sprintf(textToDisplay, "%d:%.2d:%.2d:%.2d", (int) plate->gameTimer->days, (int) plate->gameTimer->hours, (int) plate->gameTimer->minutes, (int) plate->gameTimer->secondes);
+    sprintf(textToDisplay, "Temps: %d:%.2d:%.2d:%.2d", (int) plate->gameTimer->days, (int) plate->gameTimer->hours, (int) plate->gameTimer->minutes, (int) plate->gameTimer->secondes);
     text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
-        gameAsset->font->charHeight, 0.2 * windowWidth, 0.15*windowHeight, 0, 0, 0);
-    posTxt.x = (windowWidth + sizeGrid)/2 - text->w;
-    posTxt.y = windowHeight-sizeGrid - 0.05 * windowHeight - text->h;
+        gameAsset->font->charHeight, gameAsset->grid->box.w/2, 0.15*WIN_HEIGHT, 75, 75, 75);
+    posTxt.x = gameAsset->grid->box.x;
+    posTxt.y = WIN_HEIGHT-sizeGrid - 0.05 * WIN_HEIGHT - text->h;
     SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
     SDL_FreeSurface(text);
     
@@ -219,7 +269,7 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
                 sprintf(textToDisplay, "%s", "");
                 sprintf(textToDisplay, "%d", plate->tab[i][j]);
                 
-                int indice = (int) log2(plate->tab[i][j]);
+                int indice = (int) abs(log2(plate->tab[i][j])-1);
                 if (gameAsset->tilesRendered[indice] == NULL)
                     gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
                     gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage, 0, 0, 0);
@@ -245,12 +295,54 @@ void displayGrid(grille* plate, gameTextures * gameAsset, int windowWidth, int w
 
         sprintf(textToDisplay, "PERDU");
         text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
-            gameAsset->font->charHeight, 0.4 * windowWidth, 0.3*windowHeight, 255, 255, 255);
+            gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, 255, 255, 255);
         posTxt.x = gameAsset->grid->box.x + (sizeGrid - text->w)/2;
         posTxt.y = gameAsset->grid->box.y + (sizeGrid - text->h)/2;
         SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
         SDL_FreeSurface(text);
     }
+
+    SDL_Flip(gameAsset->ecran);
+}
+
+void displayMenu(gameTextures * gameAsset, int select)
+{
+    char textToDisplay[50] = "";
+    SDL_Rect posTxt;
+
+    SDL_FillRect(gameAsset->ecran, NULL, SDL_MapRGB(gameAsset->ecran->format, 250, 248, 239));
+    
+    int colorText1[3] = {100, 100, 100};
+    int colorText2[3] = {100, 100, 100};
+    int colorText3[3] = {100, 100, 100};
+    if (select == 0) {colorText1[0] = 0; colorText1[1] = 150; colorText1[2] = 0;}
+    if (select == 1) {colorText2[0] = 0; colorText2[1] = 0; colorText2[2] = 150;}
+    if (select == 2) {colorText3[0] = 150; colorText3[1] = 0; colorText3[2] = 0;}
+    
+
+    sprintf(textToDisplay, "Reprendre");
+    SDL_Surface * text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, colorText1[0], colorText1[1], colorText1[2]);
+    posTxt.x = WIN_WIDTH/2 - text->w/2;
+    posTxt.y = WIN_HEIGHT/4 - text->h/2;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
+    
+    sprintf(textToDisplay, "Nouvelle partie");
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, colorText2[0], colorText2[1], colorText2[2]);
+    posTxt.x = WIN_WIDTH/2 - text->w/2;
+    posTxt.y = 2*WIN_HEIGHT/4 - text->h/2;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
+
+    sprintf(textToDisplay, "Quitter");
+    text = getFont(gameAsset->font->font, textToDisplay, gameAsset->font->charWidth,
+        gameAsset->font->charHeight, 0.4 * WIN_WIDTH, 0.3*WIN_HEIGHT, colorText3[0], colorText3[1], colorText3[2]);
+    posTxt.x = WIN_WIDTH/2 - text->w/2;
+    posTxt.y = 3*WIN_HEIGHT/4 - text->h/2;
+    SDL_BlitSurface(text, NULL, gameAsset->ecran, &posTxt);
+    SDL_FreeSurface(text);
 
     SDL_Flip(gameAsset->ecran);
 }

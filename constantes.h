@@ -6,8 +6,14 @@
 
 #define DEBUG fprintf(stderr, "[DEBUG]: File: %s, Func: %s, Line: %d\n", __FILE__, __func__, __LINE__);
 
-enum{HAUT, BAS, GAUCHE, DROITE};
-enum{IN_GAME, GAME_OVER};
+enum{HAUT, BAS, GAUCHE, DROITE, UNDO, MENU, VALIDE, EXIT};
+enum{GAME_OVER, IN_GAME};
+
+const int WIN_HEIGHT;
+const int WIN_WIDTH;
+
+const int FONT_SIZE_LOAD;
+const char FONT_PATH[100];
 
 typedef struct _timer
 {
@@ -50,6 +56,8 @@ typedef struct _gameTextures
     font * font;
     rect * grid;
     rect * tile;
+    rect * menu;
+    rect * undo;
 } gameTextures;
 
 #endif

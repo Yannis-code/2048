@@ -239,15 +239,24 @@ grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension
 
 void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
 {
-    for (int i = 0; i < plate->sizeTab; i++)
+    if (plate != NULL)
     {
-        if (plate->tab[i] != NULL)
+        if (plate->tab != NULL)
         {
-            free(plate->tab[i]);
+            for (int i = 0; i < plate->sizeTab; i++)
+            {
+                if (plate->tab[i] != NULL)
+                {
+                    free(plate->tab[i]);
+                }
+            }
         }
+        if (plate->gameTimer != NULL)
+            free(plate->gameTimer);
+        
+        free(plate->tab);
+        free(plate);
     }
-    free(plate->tab);
-    free(plate);
 }
 
 clock_t updateTimer(timer * gameTimer)
@@ -259,6 +268,33 @@ clock_t updateTimer(timer * gameTimer)
     gameTimer->secondes = timer - gameTimer->minutes*60 - gameTimer->hours*3600 - gameTimer->days*86400;
     gameTimer->timeElapsed = timer;
     return timer;
+}
+
+void copyGrid(grille * plateCpy, grille * plateSrc)
+{
+    if (plateSrc != NULL)
+    {        
+        if (plateSrc->tab != NULL)
+            for (int i = 0; i < plateSrc->sizeTab; i++)
+                for (int j = 0; j < plateSrc->sizeTab; j++)
+                    plateCpy->tab[i][j] = plateSrc->tab[i][j];
+        else
+            return;
+        if (plateSrc->gameTimer != NULL)
+        {
+            plateCpy->gameTimer->start_ = plateSrc->gameTimer->start_;
+            plateCpy->gameTimer->loadedTime = plateSrc->gameTimer->loadedTime;
+            plateCpy->gameTimer->timeElapsed = plateSrc->gameTimer->timeElapsed;
+            plateCpy->gameTimer->days = plateSrc->gameTimer->days;
+            plateCpy->gameTimer->hours = plateSrc->gameTimer->hours;
+            plateCpy->gameTimer->minutes = plateSrc->gameTimer->minutes;
+            plateCpy->gameTimer->secondes = plateSrc->gameTimer->secondes;
+        }
+        plateCpy->bestScore = plateSrc->bestScore;
+        plateCpy->score = plateSrc->score;
+        plateCpy->sizeTab = plateSrc->sizeTab;
+        plateCpy->status = plateSrc->status;
+    }
 }
 
 void consoleGameLoop(grille * plate, int newGame)
@@ -296,23 +332,21 @@ void consoleGameLoop(grille * plate, int newGame)
     } while (mainloop);
     if (gameOver(plate))
     {
-        char deleteFile[50];
-        sprintf(deleteFile, "rm -f ./games/%dx%d/save;", plate->sizeTab, plate->sizeTab);
-        system(deleteFile);
         printf("\n=== PERDU ===\n");
         printf("[ENTRER] pour quitter\n");
         printf(">");
         scanf("%c", &c);
     }
-    else
-        saveGame(plate);
+    saveGame(plate);
     system("clear");
 }
 
 void graphiqueGameLoop(grille * plate, int newGame)
 {
-    int nbchangement = 1, mainloop = 1, event = -10;
-    int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;  
+    int mainloop = 1, menuloop = 0;
+    int nbchangement = 1, event = -10, canRewind = 0, menuSelect = 0;
+    int maxTheoricTile = (plate->sizeTab * plate->sizeTab)+1;
+    grille * prevMove = newGrid(plate->sizeTab);
     gameTextures * gameAsset = initGraphicAssets(maxTheoricTile);
     plate->gameTimer->start_ = clock();
     if ((gameAsset->ecran = initSDL(gameAsset->ecran)) == NULL)
@@ -330,16 +364,72 @@ void graphiqueGameLoop(grille * plate, int newGame)
     {
         if (!gameOver(plate))
             updateTimer(plate->gameTimer);
-        displayGrid(plate, gameAsset, 800, 1000);
+        displayGrid(plate, gameAsset);
         event = eventSDL();
-        if (event == -1)
+
+        if (event == EXIT)
             mainloop = 0;
-        if (event != -10 && event != -1 && !gameOver(plate))
+        if (event != -10 && event != EXIT && event != UNDO && event != MENU && !gameOver(plate))
         {
+            copyGrid(prevMove, plate);
+            canRewind = 1;
             nbchangement = updateGrid(plate, event);
             if (checkFreeSpace(plate) && nbchangement)
                 placeRandomNumber(plate, 1);
         }
+        if (event == UNDO && canRewind)
+        {
+            copyGrid(plate, prevMove);
+            canRewind = 0;
+        }
+        if (event == MENU)
+        {
+            menuloop = 1;
+            menuSelect = 0;
+        }
+        while (menuloop)
+        {
+            displayMenu(gameAsset, menuSelect);
+            event = eventSDL();
+            if (event == EXIT)
+            {
+                mainloop = 0;
+                menuloop = 0;
+            }
+            else if (event == MENU)
+            {
+                menuloop = 0;
+                event = -10;
+            }
+            else if (event == BAS)
+                menuSelect = (menuSelect == 0)?1:(menuSelect == 1)?2:0;
+            else if (event == HAUT)
+                menuSelect = (menuSelect == 0)?2:(menuSelect == 1)?0:1;
+            else if (event == VALIDE)
+            {
+                if (menuSelect == 0)
+                    menuloop = 0;
+                else if (menuSelect == 1)
+                {
+                    int taille = plate->sizeTab;
+                    int bestScore = plate->bestScore;
+                    freeGrid(plate);
+                    plate = newGrid(taille);
+                    placeRandomNumber(plate, 2);
+                    plate->bestScore = bestScore;
+                    plate->gameTimer->timeElapsed = 0;
+                    plate->gameTimer->start_ = clock();
+                    menuloop = 0;
+                }
+                else if (menuSelect == 2)
+                {
+                    mainloop = 0;
+                    menuloop = 0;
+                }
+            }
+            
+        }
+        
         if (gameOver(plate))
             plate->status = GAME_OVER;
         
@@ -349,6 +439,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
     } while (mainloop);
     freeGameTextures(plate, gameAsset);
     free(plate->gameTimer);
+    free(prevMove->gameTimer);
     saveGame(plate);
     if (gameOver(plate))
     {
