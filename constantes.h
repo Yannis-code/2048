@@ -12,6 +12,9 @@ enum{GAME_OVER, IN_GAME};
 const int WIN_HEIGHT;
 const int WIN_WIDTH;
 
+const int SIZE_GRID_MIN;
+const int SIZE_GRID_MAX;
+
 const int FONT_SIZE_LOAD;
 const char FONT_PATH[100];
 
@@ -28,7 +31,7 @@ typedef struct _timer
 
 typedef struct _grille
 {
-    int ** tab;
+    unsigned long long int ** tab;
     int score;
     int bestScore;
     short sizeTab;

@@ -5,6 +5,9 @@
 const int WIN_HEIGHT = 1000;
 const int WIN_WIDTH = 600;
 
+const int SIZE_GRID_MIN = 2;
+const int SIZE_GRID_MAX = 7;
+
 const int FONT_SIZE_LOAD = 150;
 //const char FONT_PATH[100] = "./roboto-mono/RobotoMono-Bold.ttf";
 //const char FONT_PATH[100] = "./roboto-mono/RobotoMono-BoldItalic.ttf";

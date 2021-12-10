@@ -60,7 +60,7 @@ void printGame(grille * plate) // Affiche un tableau 2D
         for (int j = 0; j < plate->sizeTab; j++)
         {
             if (j == 0) printf("> ");
-            printf("| %*d ", getSizeOfNumber(max), plate->tab[i][j]);
+            printf("| %*llu ", getSizeOfNumber(max), plate->tab[i][j]);
         }
         printf("|\n");
     }

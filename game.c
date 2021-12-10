@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 #include <time.h>
 #include <bits/time.h>
 
@@ -65,7 +66,7 @@ int gameOver(grille * plate) // Détermine si la partie est terminé
     return 1;
 }
 
-int * getArrayPointer(grille * plate, int i, int j, int direction)
+unsigned long long int * getArrayPointer(grille * plate, int i, int j, int direction)
 {
     if (direction == DROITE)
         return &plate->tab[i][plate->sizeTab-1-j];
@@ -81,7 +82,7 @@ int * getArrayPointer(grille * plate, int i, int j, int direction)
 int updateGrid(grille * plate, int direction)
 {
     int i = 0, j = 0, k = 0, change = 0;
-    int * curseur;
+    unsigned long long int * curseur;
 
     for (i = 0; i < plate->sizeTab; i++) // 
     {
@@ -138,7 +139,7 @@ void saveGame(grille * plate)
         {
             for (int j = 0; j < plate->sizeTab; j++)
             {
-                fprintf(file, "%d ", plate->tab[i][j]);
+                fprintf(file, "%llu ", plate->tab[i][j]);
             }
             fprintf(file, "\n");
         }
@@ -180,7 +181,7 @@ grille * loadGame(int taille)
         {
             for (int j = 0; j < plate->sizeTab; j++)
             {
-                fscanf(file, "%d ", &plate->tab[i][j]);
+                fscanf(file, "%llu ", &plate->tab[i][j]);
             }
             fscanf(file, "\n");
         }
@@ -206,13 +207,13 @@ grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension
 
     plate->gameTimer = (timer *) malloc(sizeof(timer));
 
-    plate->tab = (int **) malloc(plate->sizeTab * sizeof(int*));
+    plate->tab = (unsigned long long int **) malloc(plate->sizeTab * sizeof(unsigned long long int*));
     if (plate->tab == NULL)
         return NULL;
     
     for (int i = 0; i < size; i++)
     {
-        plate->tab[i] = (int*) malloc(plate->sizeTab * sizeof(int));
+        plate->tab[i] = (unsigned long long int*) malloc(plate->sizeTab * sizeof(unsigned long long int));
         if (plate->tab[i] == NULL)
         {
             for (int j = 0; j < i; j++)

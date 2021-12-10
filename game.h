@@ -9,7 +9,7 @@ int checkFreeSpace(grille * plate);
 
 int gameOver(grille * plate);
 
-int * getArrayPointer(grille * plate, int i, int j, int direction);
+unsigned long long int * getArrayPointer(grille * plate, int i, int j, int direction);
 
 int updateGrid(grille * plate, int direction);
 

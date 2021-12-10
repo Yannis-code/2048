@@ -267,12 +267,28 @@ void displayGrid(grille* plate, gameTextures * gameAsset)
             if (plate->tab[i][j])
             {
                 sprintf(textToDisplay, "%s", "");
-                sprintf(textToDisplay, "%d", plate->tab[i][j]);
+                unsigned long long int value = plate->tab[i][j];
+
+                if (value >= 50000 && value < 1000000)
+                    sprintf(textToDisplay, "%lluk", value/1000);
+                else if (value >= 1000000 && value < 1000000000)
+                    sprintf(textToDisplay, "%lluM", value/1000000);
+                else if (value >= 1000000000)
+                    sprintf(textToDisplay, "%lluMd", value/1000000000);
+                else
+                    sprintf(textToDisplay, "%llu", value);
+
                 
-                int indice = (int) abs(log2(plate->tab[i][j])-1);
+                int indice = (int) abs(log2(value)-1);
                 if (gameAsset->tilesRendered[indice] == NULL)
-                    gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
-                    gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage, 0, 0, 0);
+                {
+                    if (value == 2 || value == 4)
+                        gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
+                        gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage, 119, 110, 101);
+                    else
+                        gameAsset->tilesRendered[indice] = getFont(gameAsset->font->font, textToDisplay,
+                        gameAsset->font->charWidth, gameAsset->font->charHeight, 0.8 * sizeImage, 0.8 * sizeImage, 249, 246, 242);
+                }
                 
                 SDL_Surface * texte = gameAsset->tilesRendered[indice];
 
