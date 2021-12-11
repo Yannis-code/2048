@@ -73,7 +73,7 @@ void printGame(grille * plate) // Affiche un tableau 2D
     int size = getSizeOfNumber(plate->bestScore) + getSizeOfNumber(plate->score);
     system("clear");
     printSeparator(size);
-    printf("       [d]    -> Droite\n   [q] ou [g] -> Gauche\n   [z] ou [h] -> Haut\n   [s] ou [b] -> Bas\n    [ESPACE]  -> Quitter\n    [ENTRER]  -> Valider\n");
+    printf("       [u]    -> Annuler\n       [d]    -> Droite\n   [q] ou [g] -> Gauche\n   [z] ou [h] -> Haut\n   [s] ou [b] -> Bas\n    [ESPACE]  -> Quitter\n    [ENTRER]  -> Valider\n");
     printSeparator(size);
     printf(" SCORE: %d | Meilleur: %d\n", plate->score, plate->bestScore);
     printSeparator(size);

@@ -130,7 +130,7 @@ void saveGame(grille * plate)
         }
     }
     else
-        fprintf(file, "%d %d\n", plate->status, plate->score);
+        fprintf(file, "%d %d\n", plate->status, plate->bestScore);
     
     fclose(file);
 }
@@ -306,23 +306,24 @@ void consoleGameLoop(grille * plate)
             printf("> ");
             scanf("%c", &c);
             vider_buffer();
+            if (canRewind) canRewind = 1;
         }
-        if (c != 'u' && c != 'U') {copyGrid(prevMove, plate); canRewind = 1;}
         if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
         else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
         else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
         else if (c == 'd' || c == 'D') {direction = DROITE;}
         else if (c == ' ') mainloop = 0;
         else if ((c == 'u' || c == 'U') && canRewind) {copyGrid(plate, prevMove); canRewind = 0;}
-        if (gameOver(plate) && plate->status == IN_GAME)
-            plate->status = GAME_OVER;
         if (mainloop && plate->status == IN_GAME && c != 'u' && c != 'U')
         {
+            copyGrid(prevMove, plate);
+            canRewind = 1;
             nbchangement = updateGrid(plate, direction);
             if (checkFreeSpace(plate) && nbchangement)
                 placeRandomNumber(plate, 1);
         }
-        
+        if (gameOver(plate) && plate->status == IN_GAME)
+            plate->status = GAME_OVER;
         if (plate->score >= plate->bestScore)
             plate->bestScore = plate->score;
     } while (mainloop);
