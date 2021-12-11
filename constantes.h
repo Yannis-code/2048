@@ -1,3 +1,15 @@
+/**
+ * @file constantes.h
+ * @author ROCHE Yannis  - yannis.roche@etu.uca.fr  - 22002168
+ * @author DUPOIS Thomas - thomas.dupois@etu.uca.fr - 22001214
+ * @brief Fichier header des constantes du programme
+ * @version 0.1
+ * @date 2021-12-11
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #ifndef CONSTANTES
 #define CONSTANTES
 
@@ -61,6 +73,7 @@ typedef struct _gameTextures
     rect * tile;
     rect * menu;
     rect * undo;
+    int nbTilesRendered;
 } gameTextures;
 
 #endif

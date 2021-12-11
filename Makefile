@@ -1,4 +1,3 @@
-# fichier Makefile permettant de compiler le 2048
 CC = gcc
 CFLAGS = -Wall
 LDFLAG = $(​sdl-config --cflags --libs)​
@@ -9,7 +8,6 @@ OBJ = $(SRC:.c=.o)
 
 all : $(EXEC)
 
-# Compilation de l'éxecutable final
 ​$(​EXEC​)​ : ​$(​OBJ​) constantes.o
 	$(​CC​)​ $(CFLAGS) -o ​$@​ ​$^​ ​$(​LDFLAG​) $(LDLIBS)
 
@@ -18,7 +16,7 @@ all : $(EXEC)
 ​%​.o​:​%​.c constantes.o
 	$(​CC​)​ ​$(​CFLAG​) -o ​$@​ -c ​$<​ ​$(​LDFLAG​)  $(LDLIBS)
 
-.PHONY: clean mrproper rebuild
+.PHONY: clean mrproper rebuild run
 
 clean:
 	rm -rf *.o
@@ -28,5 +26,5 @@ mrproper: clean
 
 rebuild: mrproper all
 
-​run​: all 
-	./jeu
+run: all
+	./$(EXEC)

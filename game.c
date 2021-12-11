@@ -1,3 +1,15 @@
+/**
+ * @file game.c
+ * @author ROCHE Yannis  - yannis.roche@etu.uca.fr  - 22002168
+ * @author DUPOIS Thomas - thomas.dupois@etu.uca.fr - 22001214
+ * @brief Fichier de la partie logique de jeu du programme
+ * @version 0.1
+ * @date 2021-12-11
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,6 +25,152 @@
 #include "game.h"
 #include "console.h"
 #include "graphique.h"
+
+grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
+{
+    grille * plate = (grille *) malloc(sizeof(grille));
+    if (plate == NULL)
+        return NULL;
+
+    plate->sizeTab = size;
+    plate->score = 0;
+    plate->status = IN_GAME;
+
+    plate->gameTimer = (timer *) malloc(sizeof(timer));
+
+    plate->tab = (unsigned long long int **) malloc(plate->sizeTab * sizeof(unsigned long long int*));
+    if (plate->tab == NULL)
+        return NULL;
+    
+    for (int i = 0; i < size; i++)
+    {
+        plate->tab[i] = (unsigned long long int*) malloc(plate->sizeTab * sizeof(unsigned long long int));
+        if (plate->tab[i] == NULL)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                free(plate->tab[j]);
+                plate->tab[j] = NULL;
+            }
+            free(plate->tab);
+            plate->tab = NULL;
+            free(plate);
+            plate = NULL;
+            return NULL;
+        }
+        else
+            for (int j = 0; j < plate->sizeTab; j++)
+                plate->tab[i][j] = 0;
+    }
+    return plate;
+}
+
+void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
+{
+    if (plate != NULL)
+    {
+        if (plate->tab != NULL)
+            for (int i = 0; i < plate->sizeTab; i++)
+                if (plate->tab[i] != NULL)
+                    free(plate->tab[i]);
+
+        if (plate->gameTimer != NULL)
+            free(plate->gameTimer);
+        free(plate->tab);
+        free(plate);
+    }
+}
+
+void copyGrid(grille * plateCpy, grille * plateSrc)
+{
+    if (plateSrc != NULL)
+    {        
+        if (plateSrc->tab != NULL)
+            for (int i = 0; i < plateSrc->sizeTab; i++)
+                for (int j = 0; j < plateSrc->sizeTab; j++)
+                    plateCpy->tab[i][j] = plateSrc->tab[i][j];
+        else
+            return;
+        if (plateSrc->gameTimer != NULL)
+        {
+            plateCpy->gameTimer->start_ = plateSrc->gameTimer->start_;
+            plateCpy->gameTimer->loadedTime = plateSrc->gameTimer->loadedTime;
+            plateCpy->gameTimer->timeElapsed = plateSrc->gameTimer->timeElapsed;
+            plateCpy->gameTimer->days = plateSrc->gameTimer->days;
+            plateCpy->gameTimer->hours = plateSrc->gameTimer->hours;
+            plateCpy->gameTimer->minutes = plateSrc->gameTimer->minutes;
+            plateCpy->gameTimer->secondes = plateSrc->gameTimer->secondes;
+        }
+        plateCpy->bestScore = plateSrc->bestScore;
+        plateCpy->score = plateSrc->score;
+        plateCpy->sizeTab = plateSrc->sizeTab;
+        plateCpy->status = plateSrc->status;
+    }
+}
+
+void saveGame(grille * plate)
+{
+    char path[30];
+    sprintf(path, "./games/%dx%d_save", plate->sizeTab, plate->sizeTab);
+    
+    FILE * file = fopen(path, "w+");
+    if (file == NULL)
+    {
+        fprintf(stderr, "Impossible de sauvegarder la partie\n");
+        return;
+    }
+    if (plate->status == IN_GAME)
+    {
+        fprintf(file, "%d %d %d %lf\n", plate->status, plate->score, plate->bestScore, plate->gameTimer->timeElapsed);
+        for (int i = 0; i < plate->sizeTab; i++)
+        {
+            for (int j = 0; j < plate->sizeTab; j++)
+                fprintf(file, "%llu ", plate->tab[i][j]);
+            fprintf(file, "\n");
+        }
+    }
+    else
+        fprintf(file, "%d %d\n", plate->status, plate->score);
+    
+    fclose(file);
+}
+
+grille * loadGame(int taille)
+{
+    char path[30];
+    sprintf(path, "./games/%dx%d_save", taille, taille);
+    
+    grille * plate = newGrid(taille);
+    if (plate == NULL)
+        return NULL;
+
+    FILE * file = fopen(path, "r");
+    if (file == NULL)
+    {
+        fprintf(stderr, "Aucune sauvegarde disponible\n");
+        plate->status = GAME_OVER;
+        plate->bestScore = 0;
+        plate->score = 0;
+        return plate;
+    }
+
+    fscanf(file, "%hd ", &plate->status);
+    if (plate->status == IN_GAME)
+    {
+        fscanf(file, "%d %d %lf\n", &plate->score, &plate->bestScore, &plate->gameTimer->loadedTime);
+        for (int i = 0; i < plate->sizeTab; i++)
+        {
+            for (int j = 0; j < plate->sizeTab; j++)
+                fscanf(file, "%llu ", &plate->tab[i][j]);
+            fscanf(file, "\n");
+        }
+    }
+    else
+        fscanf(file, "%d\n", &plate->bestScore);
+    
+    fclose(file);
+    return plate;
+}
 
 void placeRandomNumber(grille * plate, int nb) // Place un "2" à une position libre (="0"), et aléatoire dans le tableau
 {
@@ -35,13 +193,9 @@ void placeRandomNumber(grille * plate, int nb) // Place un "2" à une position l
 int checkFreeSpace(grille * plate)
 {
     for (int i = 0; i < plate->sizeTab; i++)
-    {
         for (int j = 0; j < plate->sizeTab; j++)
-        {
             if (plate->tab[i][j] == 0)
                 return 1;
-        }
-    }
     return 0;
 }
 
@@ -52,15 +206,11 @@ int gameOver(grille * plate) // Détermine si la partie est terminé
         for (int j = 0; j < plate->sizeTab; j++)
         {
             if (i < (plate->sizeTab)-1)
-            {
                 if(plate->tab[i][j] == plate->tab[i+1][j] || plate->tab[i][j] == 0 || plate->tab[i+1][j] == 0)
                     return 0;
-            }
             if (j < (plate->sizeTab)-1)
-            {
                 if(plate->tab[i][j] == plate->tab[i][j+1] || plate->tab[i][j] == 0 || plate->tab[i][j+1] == 0)
                     return 0;
-            }
         }
     } 
     return 1;
@@ -121,145 +271,7 @@ int updateGrid(grille * plate, int direction)
     return change;
 }
 
-void saveGame(grille * plate)
-{
-    char path[30];
-    sprintf(path, "./games/%dx%d_save", plate->sizeTab, plate->sizeTab);
-    
-    FILE * file = fopen(path, "w+");
-    if (file == NULL)
-    {
-        fprintf(stderr, "Impossible de sauvegarder la partie\n");
-        return;
-    }
-    if (plate->status == IN_GAME)
-    {
-        fprintf(file, "%d %d %d %lf\n", plate->status, plate->score, plate->bestScore, plate->gameTimer->timeElapsed);
-        for (int i = 0; i < plate->sizeTab; i++)
-        {
-            for (int j = 0; j < plate->sizeTab; j++)
-            {
-                fprintf(file, "%llu ", plate->tab[i][j]);
-            }
-            fprintf(file, "\n");
-        }
-    }
-    else
-    {
-        fprintf(file, "%d %d\n", plate->status, plate->score);
-    }
-    
-    fclose(file);
-}
-
-grille * loadGame(int taille)
-{
-    char path[30];
-    sprintf(path, "./games/%dx%d_save", taille, taille);
-    
-    grille * plate = newGrid(taille);
-    if (plate == NULL)
-    {
-        return NULL;
-    }
-
-    FILE * file = fopen(path, "r");
-    if (file == NULL)
-    {
-        fprintf(stderr, "Aucune sauvegarde disponible\n");
-        plate->status = GAME_OVER;
-        plate->bestScore = 0;
-        plate->score = 0;
-        return plate;
-    }
-
-    fscanf(file, "%hd ", &plate->status);
-    if (plate->status == IN_GAME)
-    {
-        fscanf(file, "%d %d %lf\n", &plate->score, &plate->bestScore, &plate->gameTimer->loadedTime);
-        for (int i = 0; i < plate->sizeTab; i++)
-        {
-            for (int j = 0; j < plate->sizeTab; j++)
-            {
-                fscanf(file, "%llu ", &plate->tab[i][j]);
-            }
-            fscanf(file, "\n");
-        }
-    }
-    else
-    {
-        fscanf(file, "%d\n", &plate->bestScore);
-    }
-    
-    fclose(file);
-    return plate;
-}
-
-grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension 
-{
-    grille * plate = (grille *) malloc(sizeof(grille));
-    if (plate == NULL)
-        return NULL;
-
-    plate->sizeTab = size;
-    plate->score = 0;
-    plate->status = IN_GAME;
-
-    plate->gameTimer = (timer *) malloc(sizeof(timer));
-
-    plate->tab = (unsigned long long int **) malloc(plate->sizeTab * sizeof(unsigned long long int*));
-    if (plate->tab == NULL)
-        return NULL;
-    
-    for (int i = 0; i < size; i++)
-    {
-        plate->tab[i] = (unsigned long long int*) malloc(plate->sizeTab * sizeof(unsigned long long int));
-        if (plate->tab[i] == NULL)
-        {
-            for (int j = 0; j < i; j++)
-            {
-                free(plate->tab[j]);
-                plate->tab[j] = NULL;
-            }
-            free(plate->tab);
-            plate->tab = NULL;
-            free(plate);
-            plate = NULL;
-            return NULL;
-        }
-        else
-        {
-            for (int j = 0; j < plate->sizeTab; j++)
-            {
-                plate->tab[i][j] = 0;
-            }
-        }
-    }
-    return plate;
-}
-
-void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
-{
-    if (plate != NULL)
-    {
-        if (plate->tab != NULL)
-        {
-            for (int i = 0; i < plate->sizeTab; i++)
-            {
-                if (plate->tab[i] != NULL)
-                {
-                    free(plate->tab[i]);
-                }
-            }
-        }
-        if (plate->gameTimer != NULL)
-            free(plate->gameTimer);
-        free(plate->tab);
-        free(plate);
-    }
-}
-
-clock_t updateTimer(timer * gameTimer)
+void updateTimer(timer * gameTimer)
 {
     clock_t timer = (clock() - gameTimer->start_)/CLOCKS_PER_SEC + gameTimer->loadedTime;
     gameTimer->days = timer/86400;
@@ -267,41 +279,13 @@ clock_t updateTimer(timer * gameTimer)
     gameTimer->minutes = timer/60 - gameTimer->hours*60 - gameTimer->days*1440;
     gameTimer->secondes = timer - gameTimer->minutes*60 - gameTimer->hours*3600 - gameTimer->days*86400;
     gameTimer->timeElapsed = timer;
-    return timer;
 }
 
-void copyGrid(grille * plateCpy, grille * plateSrc)
-{
-    if (plateSrc != NULL)
-    {        
-        if (plateSrc->tab != NULL)
-            for (int i = 0; i < plateSrc->sizeTab; i++)
-                for (int j = 0; j < plateSrc->sizeTab; j++)
-                    plateCpy->tab[i][j] = plateSrc->tab[i][j];
-        else
-            return;
-        if (plateSrc->gameTimer != NULL)
-        {
-            plateCpy->gameTimer->start_ = plateSrc->gameTimer->start_;
-            plateCpy->gameTimer->loadedTime = plateSrc->gameTimer->loadedTime;
-            plateCpy->gameTimer->timeElapsed = plateSrc->gameTimer->timeElapsed;
-            plateCpy->gameTimer->days = plateSrc->gameTimer->days;
-            plateCpy->gameTimer->hours = plateSrc->gameTimer->hours;
-            plateCpy->gameTimer->minutes = plateSrc->gameTimer->minutes;
-            plateCpy->gameTimer->secondes = plateSrc->gameTimer->secondes;
-        }
-        plateCpy->bestScore = plateSrc->bestScore;
-        plateCpy->score = plateSrc->score;
-        plateCpy->sizeTab = plateSrc->sizeTab;
-        plateCpy->status = plateSrc->status;
-    }
-}
-
-void consoleGameLoop(grille * plate, int newGame)
+void consoleGameLoop(grille * plate)
 {
     char c = '\0';
     int direction, nbchangement = 0, mainloop = 1;
-    if (newGame == GAME_OVER)
+    if (plate->status == GAME_OVER)
     {
         placeRandomNumber(plate, 2);
         plate->status = IN_GAME;
@@ -341,7 +325,7 @@ void consoleGameLoop(grille * plate, int newGame)
     system("clear");
 }
 
-void graphiqueGameLoop(grille * plate, int newGame)
+void graphiqueGameLoop(grille * plate)
 {
     int mainloop = 1, menuloop = 0;
     int nbchangement = 1, event = -10, canRewind = 0, menuSelect = 0;
@@ -355,7 +339,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
         exit(EXIT_FAILURE);
     }
 
-    if (newGame == GAME_OVER)
+    if (plate->status == GAME_OVER)
     {
         placeRandomNumber(plate, 2);
         plate->status = IN_GAME;
@@ -434,7 +418,7 @@ void graphiqueGameLoop(grille * plate, int newGame)
             plate->bestScore = plate->score;
         
     } while (mainloop);
-    freeGameTextures(plate, gameAsset);
+    freeGraphics(gameAsset);
     free(prevMove->gameTimer);
     saveGame(plate);
 }

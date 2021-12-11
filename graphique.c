@@ -1,3 +1,15 @@
+/**
+ * @file graphique.c
+ * @author ROCHE Yannis  - yannis.roche@etu.uca.fr  - 22002168
+ * @author DUPOIS Thomas - thomas.dupois@etu.uca.fr - 22001214
+ * @brief Fichier de la partie affichage graphique du programme
+ * @version 0.1
+ * @date 2021-12-11
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -38,6 +50,49 @@ SDL_Surface * initSDL(SDL_Surface * ecran)
     return ecran;
 }
 
+gameTextures * initGraphicAssets(int maxTheoricTile)
+{
+    gameTextures * gameAsset = (gameTextures *) malloc(sizeof(gameTextures));
+    gameAsset->grid = (rect *) malloc(sizeof(rect));
+    gameAsset->grid->surface = NULL;
+    gameAsset->tile = (rect *) malloc(sizeof(rect));
+    gameAsset->tile->surface = NULL;
+    gameAsset->menu = (rect *) malloc(sizeof(rect));
+    gameAsset->menu->surface = NULL;
+    gameAsset->undo = (rect *) malloc(sizeof(rect));
+    gameAsset->undo->surface = NULL;
+    gameAsset->font = (font *) malloc(sizeof(font));
+    gameAsset->font->font = NULL;
+    gameAsset->tilesRendered = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
+    for (int i = 0; i < maxTheoricTile; i++)
+        gameAsset->tilesRendered[i] = NULL;
+    gameAsset->nbTilesRendered = maxTheoricTile;
+    
+    return gameAsset;
+}
+
+void freeGraphics(gameTextures * gameAsset)
+{
+    for (int i = 0; i < gameAsset->nbTilesRendered; i++)
+        if (gameAsset->tilesRendered[i] != NULL)
+            SDL_FreeSurface(gameAsset->tilesRendered[i]);
+
+    if (gameAsset->font->font != NULL)
+        TTF_CloseFont(gameAsset->font->font);
+    free(gameAsset->font);
+
+    if (gameAsset->grid->surface != NULL)
+        SDL_FreeSurface(gameAsset->grid->surface);
+    free(gameAsset->grid);
+
+    if (gameAsset->tile->surface != NULL)
+        SDL_FreeSurface(gameAsset->tile->surface);
+    free(gameAsset->tile);
+    SDL_FreeSurface(gameAsset->ecran);
+    TTF_Quit();
+    SDL_Quit();
+}
+
 int eventSDL(void)
 {
     SDL_Event event;
@@ -45,41 +100,38 @@ int eventSDL(void)
     switch(event.type)
     {
         case SDL_QUIT:
-            return EXIT;
+            return EXIT; // Click sur fermer la fenetre
             break;
         case SDL_KEYDOWN:
             switch(event.key.keysym.sym)
             {
-                case SDLK_ESCAPE: // Veut arrêter le jeu
+                case SDLK_ESCAPE: // Affichage du menu
                     return MENU;
                     break;
-                case SDLK_UP: // Demande à jouer
+                case SDLK_UP: // Fleche du haut
                     return HAUT;
                     break;
-                case SDLK_DOWN: // Demande à jouer
+                case SDLK_DOWN: // Fleche du bas
                     return BAS;
                     break;
-                case SDLK_RIGHT: // Demande à jouer
+                case SDLK_RIGHT: // Fleche de droite
                     return DROITE;
                     break;
-                case SDLK_LEFT: // Demande à jouer
+                case SDLK_LEFT: // Fleche de gauche
                     return GAUCHE;
                     break;
-                case SDLK_BACKSPACE: // Demande à jouer
+                case SDLK_BACKSPACE: // Touche supprimer
                     return UNDO;
                     break;
-                case SDLK_m: // Demande à jouer
-                    return MENU;
-                    break;
-                case SDLK_RETURN: // Demande à jouer
+                case SDLK_RETURN: // Touche entrée
                     return VALIDE;
                     break;
-                default: // Demande l'éditeur de niveaux
+                default: // Défaut renvoie un valeur négative non interprété
                     return -10;
                     break;
             }
             break;
-        default:
+        default: // Défaut renvoie un valeur négative non interprété
             return -10;
             break;
     }
@@ -131,28 +183,6 @@ int * getColorRGB(int value)
         }
     }
     return RGB;
-}
-
-gameTextures * initGraphicAssets(int maxTheoricTile)
-{
-    gameTextures * gameAsset = (gameTextures *) malloc(sizeof(gameTextures));
-    gameAsset->grid = (rect *) malloc(sizeof(rect));
-    gameAsset->grid->surface = NULL;
-    gameAsset->tile = (rect *) malloc(sizeof(rect));
-    gameAsset->tile->surface = NULL;
-    gameAsset->menu = (rect *) malloc(sizeof(rect));
-    gameAsset->menu->surface = NULL;
-    gameAsset->undo = (rect *) malloc(sizeof(rect));
-    gameAsset->undo->surface = NULL;
-    gameAsset->font = (font *) malloc(sizeof(font));
-    gameAsset->font->font = NULL;
-    gameAsset->tilesRendered = (SDL_Surface **) malloc(maxTheoricTile * sizeof(SDL_Surface *));
-    for (int i = 0; i < maxTheoricTile; i++)
-    {
-        gameAsset->tilesRendered[i] = NULL;
-    }
-    
-    return gameAsset;
 }
 
 void displayGrid(grille* plate, gameTextures * gameAsset)
@@ -361,26 +391,4 @@ void displayMenu(gameTextures * gameAsset, int select)
     SDL_FreeSurface(text);
 
     SDL_Flip(gameAsset->ecran);
-}
-
-void freeGameTextures(grille* plate, gameTextures * gameAsset)
-{
-    for (int i = 0; i < (plate->sizeTab * plate->sizeTab)+1; i++)
-        if (gameAsset->tilesRendered[i] != NULL)
-            SDL_FreeSurface(gameAsset->tilesRendered[i]);
-
-    if (gameAsset->font->font != NULL)
-        TTF_CloseFont(gameAsset->font->font);
-    free(gameAsset->font);
-
-    if (gameAsset->grid->surface != NULL)
-        SDL_FreeSurface(gameAsset->grid->surface);
-    free(gameAsset->grid);
-
-    if (gameAsset->tile->surface != NULL)
-        SDL_FreeSurface(gameAsset->tile->surface);
-    free(gameAsset->tile);
-    SDL_FreeSurface(gameAsset->ecran);
-    TTF_Quit();
-    SDL_Quit();
 }
