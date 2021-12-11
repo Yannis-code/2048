@@ -284,7 +284,8 @@ void updateTimer(timer * gameTimer)
 void consoleGameLoop(grille * plate)
 {
     char c = '\0';
-    int direction, nbchangement = 0, mainloop = 1;
+    int direction, nbchangement = 0, mainloop = 1, canRewind = 0;
+    grille * prevMove = newGrid(plate->sizeTab);
     if (plate->status == GAME_OVER)
     {
         placeRandomNumber(plate, 2);
@@ -294,33 +295,37 @@ void consoleGameLoop(grille * plate)
     {
         printGame(plate);
         c = '\0';
-        if (!gameOver(plate))
-            while (!(c == 'z' || c == 'Z' || c == 'h' || c == 'H' || c == 'q' || c == 'Q' || c == 'g' || c == 'G'
-                || c == 's' || c == 'S' || c == 'b' || c == 'B' || c == 'd' || c == 'D' || c == ' '))
-            {
-                printf("> ");
-                scanf("%c", &c);
-                vider_buffer();
-            }
+        if (gameOver(plate))
+        {
+            printf("=== PERDU ===\n");
+            printf("[ESPACE] puis [ENTRER] pour quitter\n");
+        }
+        while (!(c == 'u' || c == 'U' || c == 'z' || c == 'Z' || c == 'h' || c == 'H' || c == 'q' || c == 'Q'
+            || c == 'g' || c == 'G' || c == 's' || c == 'S' || c == 'b' || c == 'B' || c == 'd' || c == 'D' || c == ' '))
+        {
+            printf("> ");
+            scanf("%c", &c);
+            vider_buffer();
+        }
+        if (c != 'u' && c != 'U') {copyGrid(prevMove, plate); canRewind = 1;}
         if (c == 'z' || c == 'Z' || c == 'h' || c == 'H') {direction = HAUT;}
         else if (c == 'q' || c == 'Q' || c == 'g' || c == 'G') {direction = GAUCHE;}
         else if (c == 's' || c == 'S' || c == 'b' || c == 'B') {direction = BAS;}
         else if (c == 'd' || c == 'D') {direction = DROITE;}
         else if (c == ' ') mainloop = 0;
-        if (gameOver(plate))
-            mainloop = 0;
-        if (mainloop)
+        else if ((c == 'u' || c == 'U') && canRewind) {copyGrid(plate, prevMove); canRewind = 0;}
+        if (gameOver(plate) && plate->status == IN_GAME)
+            plate->status = GAME_OVER;
+        if (mainloop && plate->status == IN_GAME && c != 'u' && c != 'U')
+        {
             nbchangement = updateGrid(plate, direction);
-        if (checkFreeSpace(plate) && nbchangement)
-            placeRandomNumber(plate, 1);
+            if (checkFreeSpace(plate) && nbchangement)
+                placeRandomNumber(plate, 1);
+        }
+        
+        if (plate->score >= plate->bestScore)
+            plate->bestScore = plate->score;
     } while (mainloop);
-    if (gameOver(plate))
-    {
-        printf("\n=== PERDU ===\n");
-        printf("[ENTRER] pour quitter\n");
-        printf(">");
-        scanf("%c", &c);
-    }
     saveGame(plate);
     system("clear");
 }
