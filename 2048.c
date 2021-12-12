@@ -35,7 +35,5 @@ int main(int argc, char const *argv[])
         else
             graphiqueGameLoop(plate);
     }
-
-    freeGrid(plate);
     return EXIT_SUCCESS;
 }

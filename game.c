@@ -67,18 +67,25 @@ grille * newGrid(int size) // Créer un tableau vide avec une certaine dimension
 
 void freeGrid(grille * plate) // Libère la mémoire prélevé par le tableau
 {
-    if (plate != NULL)
-    {
+    /*if (plate != NULL)
+    {*/
         if (plate->tab != NULL)
+        {
             for (int i = 0; i < plate->sizeTab; i++)
                 if (plate->tab[i] != NULL)
                     free(plate->tab[i]);
+            free(plate->tab);
+            plate->tab = NULL;
+        }
 
         if (plate->gameTimer != NULL)
+        {
             free(plate->gameTimer);
-        free(plate->tab);
+            plate->gameTimer = NULL;
+        }
         free(plate);
-    }
+        plate = NULL;
+    //}
 }
 
 void copyGrid(grille * plateCpy, grille * plateSrc)
@@ -401,6 +408,7 @@ void graphiqueGameLoop(grille * plate)
                     int taille = plate->sizeTab;
                     int bestScore = plate->bestScore;
                     freeGrid(plate);
+                    plate = NULL;
                     plate = newGrid(taille);
                     placeRandomNumber(plate, 2);
                     plate->bestScore = bestScore;
@@ -424,7 +432,9 @@ void graphiqueGameLoop(grille * plate)
             plate->bestScore = plate->score;
         
     } while (mainloop);
-    freeGraphics(gameAsset);
-    free(prevMove->gameTimer);
     saveGame(plate);
+    freeGraphics(gameAsset);
+    gameAsset = NULL;
+    freeGrid(prevMove);
+    freeGrid(plate);
 }

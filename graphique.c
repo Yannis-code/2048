@@ -71,24 +71,58 @@ gameTextures * initGraphicAssets(int maxTheoricTile)
     return gameAsset;
 }
 
+void freeRectStruct(rect * rectToFree)
+{
+    if (rectToFree != NULL)
+    {
+        if (rectToFree->surface != NULL)
+        {
+            SDL_FreeSurface(rectToFree->surface);
+            rectToFree->surface = NULL;
+        }
+        free(rectToFree);
+        rectToFree = NULL;
+    }
+}
+
 void freeGraphics(gameTextures * gameAsset)
 {
-    for (int i = 0; i < gameAsset->nbTilesRendered; i++)
-        if (gameAsset->tilesRendered[i] != NULL)
-            SDL_FreeSurface(gameAsset->tilesRendered[i]);
+    if (gameAsset != NULL)
+    {
+        if (gameAsset->tilesRendered != NULL)
+        {
+            for (int i = 0; i < gameAsset->nbTilesRendered; i++)
+                if (gameAsset->tilesRendered[i] != NULL)
+                {
+                    SDL_FreeSurface(gameAsset->tilesRendered[i]);
+                    gameAsset->tilesRendered[i] = NULL;
+                }
+            gameAsset->tilesRendered = NULL;
+        }
+        
+        if (gameAsset->font != NULL)
+        {
+            if (gameAsset->font->font != NULL)
+            {
+                TTF_CloseFont(gameAsset->font->font);
+                gameAsset->font->font = NULL;
+            }
+            free(gameAsset->font);
+            gameAsset->font = NULL;
+        }
 
-    if (gameAsset->font->font != NULL)
-        TTF_CloseFont(gameAsset->font->font);
-    free(gameAsset->font);
-
-    if (gameAsset->grid->surface != NULL)
-        SDL_FreeSurface(gameAsset->grid->surface);
-    free(gameAsset->grid);
-
-    if (gameAsset->tile->surface != NULL)
-        SDL_FreeSurface(gameAsset->tile->surface);
-    free(gameAsset->tile);
-    SDL_FreeSurface(gameAsset->ecran);
+        freeRectStruct(gameAsset->grid);
+        freeRectStruct(gameAsset->tile);
+        freeRectStruct(gameAsset->menu);
+        freeRectStruct(gameAsset->undo);
+        
+        if (gameAsset->ecran != NULL)
+        {
+            SDL_FreeSurface(gameAsset->ecran);
+            gameAsset->ecran = NULL;
+        }
+        free(gameAsset);
+    }
     TTF_Quit();
     SDL_Quit();
 }
