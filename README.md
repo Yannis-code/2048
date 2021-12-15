@@ -1,6 +1,7 @@
 ---
 title: 2048
-author: ROCHE Yannis  - yannis.roche@etu.uca.fr  & DUPOIS Thomas - thomas.dupois@etu.uca.fr
+author: ROCHE Yannis  - yannis.roche@etu.uca.fr
+author: DUPOIS Thomas - thomas.dupois@etu.uca.fr
 date: 12/2021
 ---
 
